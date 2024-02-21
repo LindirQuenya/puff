@@ -1506,7 +1506,7 @@ BEGIN  {* Get_Key *}
 	end
 	else
 	   if key=Ctrl_m then key:=Mu;  {! conflict with sh_down}
-	   if key=Ctrl_p then key:=Parallel;
+	   if key=Ctrl_l then key:=Parallel;
 	   if window_number=1 then
     		Erase_Cursor
              else

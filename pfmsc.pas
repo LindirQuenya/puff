@@ -303,7 +303,7 @@ Const    {* Commands for help window *}
  (( #27' '#26' '#24' '#25,'   cursor ','',''),
   ('Del,Backspace,Ins','','',''),
   ('Ctrl-o ',Omega,' Ctrl-m ', Mu),
-  ('Ctrl-d ',Degree,' Ctrl-p ',Parallel),
+  ('Ctrl-d ',Degree,' Ctrl-l ',Parallel),
   ('Ctrl-e',' erase crct','',''),
   ('Ctrl-r',' read file ','',''),
   ('Tab','  extra parts','',''),

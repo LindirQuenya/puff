@@ -47,7 +47,7 @@ CONST
  Ctrl_n=#14;     Ctrl_p=#16;    Ctrl_r=#18;    Ctrl_s=#19;   Ctrl_c=#3;
  Ctrl_q=#17;
  Esc=#27;        sh_1=#33;       sh_3=#35;    sh_4=#36;      sh_2=#64;
- Alt_o=#152;     Alt_d=#160;    Alt_m=#178;   Alt_p=#153;    Tab=#9;
+ Ctrl_o=#15;     Alt_d=#160;    Ctrl_m=#13;   Ctrl_l=#12;    Tab=#9;
  sh_down=#178;  sh_left=#180;  sh_right=#182; sh_up=#184;   C_R=#13;
  F1=#187;        F2=#188;       F3=#189;    shift_F3=#214;    F4=#190;
  F5=#191;	 F6=#192;	shift_F5=#216;  F10=#196;   Alt_s=#159;

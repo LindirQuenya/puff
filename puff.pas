@@ -2398,7 +2398,7 @@ begin
        'q','Q'     : Plot_Manager (true, true, false, false, false);
        Ctrl_q      : Plot_Manager (true, false, false, true, false);
        Tab         : Toggle_Smith_and_Plot;
-       Mu {Alt_s}  : Toggle_Large_Smith(F2);
+       Mu {Ctrl_m}  : Toggle_Large_Smith(F2);
        screenresize: Screen_Resize;
        F5	   : Change_Bk_Color;
        F10         : Toggle_Help_Window;

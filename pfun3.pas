@@ -1499,14 +1499,14 @@ BEGIN  {* Get_Key *}
 		until false;
 	end_blink:
   	key := ReadKey;
-	if key=Alt_o then key:=Omega;  {Ohms symbol}
-	if key=Alt_d then key:=Degree;
+	if key=Ctrl_o then key:=Omega;  {Ohms symbol}
+	if key=Ctrl_d then key:=Degree;
 	if (window_number=2) then begin
-	   if key=Alt_s then key:=Mu;
+	   if key=Ctrl_m then key:=Mu;
 	end
 	else
-	   if key=Alt_m then key:=Mu;  {! conflict with sh_down}
-	   if key=Alt_p then key:=Parallel;
+	   if key=Ctrl_m then key:=Mu;  {! conflict with sh_down}
+	   if key=Ctrl_p then key:=Parallel;
 	   if window_number=1 then
     		Erase_Cursor
              else

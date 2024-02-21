@@ -1,0 +1,7 @@
+*.s
+*.o
+*.ppu
+*.res
+ppas.sh
+ppasx.sh
+puff

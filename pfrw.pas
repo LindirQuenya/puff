@@ -6,6 +6,7 @@
 
 Unit pfrw;
 
+
 (*******************************************************************
 
 	Unit PFRW;
@@ -28,418 +29,487 @@ Unit pfrw;
 
 Interface
 
-Uses
-  Dos, 		{Unit found in Free Pascal RTL's}
-  xgraph,	{Custom replacement unit for TUBO's "Crt" and "Graph" units}
-  pfun1,	{Add other puff units}
-  pfun2;
+Uses 
+Dos,   {Unit found in Free Pascal RTL's}
+xgraph, {Custom replacement unit for TUBO's "Crt" and "Graph" units}
+pfun1, {Add other puff units}
+pfun2;
 
 
-procedure Read_Board(read_graphics : boolean);
-procedure read_keyO;
-procedure read_partsO;
-procedure read_circuitO;
+Procedure Read_Board(read_graphics : boolean);
+Procedure read_keyO;
+Procedure read_partsO;
+Procedure read_circuitO;
 Procedure Read_S_Params;
-procedure save_boardO;
-procedure save_keyO;
-procedure save_partsO;
-procedure save_circuitO;
-procedure save_s_paramsO;
-procedure bad_board;
-procedure read_setup(var fname2 : file_string);
+Procedure save_boardO;
+Procedure save_keyO;
+Procedure save_partsO;
+Procedure save_circuitO;
+Procedure save_s_paramsO;
+Procedure bad_board;
+Procedure read_setup(Var fname2 : file_string);
 
 
 Implementation
 
 
-procedure Read_Board(read_graphics : boolean);
+Procedure Read_Board(read_graphics : boolean);
 {*
 	Read board parameters from .puf file.
 *}
-Const
-  {* Artwork Reduction Ratios in mm/dot *}
-  red_psx=0.2117; { 25.4 mm/in  /(120 dots) in x dirn for matrix artwork}
-  red_psy=0.1764; { 25.4 mm/in  /(144 dots) in y dirn for matrix artwork}
-  red_lasr=0.169333; { LaserJet reduction ratio = 25.4 mm/in * 1/150dpi }
 
-Var
-  i    		: integer;
-  value		: double;
+Const 
+  {* Artwork Reduction Ratios in mm/dot *}
+  red_psx = 0.2117; { 25.4 mm/in  /(120 dots) in x dirn for matrix artwork}
+  red_psy = 0.1764; { 25.4 mm/in  /(144 dots) in y dirn for matrix artwork}
+  red_lasr = 0.169333; { LaserJet reduction ratio = 25.4 mm/in * 1/150dpi }
+
+Var 
+  i      : integer;
+  value  : double;
   unit_prf      : string[80];  {unit-prefix string}
   char1,char2,
-  char3,prefix 	: char;
+  char3,prefix  : char;
 
 
-  	{*****************************************************}
-	function file_prefix(id_string : string) : char;
-	{*
+   {*****************************************************}
+Function file_prefix(id_string : String) : char;
+
+{*
 		Look for prefixes when reading board parameters.
 		If no prefix and no unit then return 'x' to
 		designate that default prefixes are to be used.
 	*}
-var
+
+Var 
   pot_prefix : char;
 
 Begin
-  while id_string[1]=' ' do Delete(id_string,1,1); {delete leading blanks}
-  if id_string[1] in Eng_Dec_Mux then begin
-      pot_prefix:=id_string[1];
-      if (id_string[1]='m') and (not(id_string[2] in ['H','O','m']))
-          then pot_prefix:=' ';
+  While id_string[1]=' ' Do
+    Delete(id_string,1,1); {delete leading blanks}
+  If id_string[1] In Eng_Dec_Mux Then
+    Begin
+      pot_prefix := id_string[1];
+      If (id_string[1]='m') And (Not(id_string[2] In ['H','O','m']))
+        Then pot_prefix := ' ';
        {if its just meters, then no prefix}
-  end
-  else if id_string[1]='U' then begin   {U = micro}
-     pot_prefix:=Mu;  {convert U to Mu}
-  end
-  else if (id_string[1] in ['H','O']) then begin {Hz or Ohms?}
-     pot_prefix:=' ';  {if units but no prefix}
-  end
-  else  {if no prefix or units return 'x'}
-     pot_prefix:='x';
-  file_prefix:=pot_prefix;
-end;
+    End
+  Else If id_string[1]='U' Then
+         Begin   {U = micro}
+           pot_prefix := Mu;  {convert U to Mu}
+         End
+  Else If (id_string[1] In ['H','O']) Then
+         Begin {Hz or Ohms?}
+           pot_prefix := ' ';  {if units but no prefix}
+         End
+  Else  {if no prefix or units return 'x'}
+    pot_prefix := 'x';
+  file_prefix := pot_prefix;
+End;
 
-	{*******************************************************}
+ {*******************************************************}
 Procedure Attach_Prefix(b_num : integer; def_prefix : char;
-	 var board_param : double; zero_OK : boolean);
+                        Var board_param : double; zero_OK : boolean);
 {*
 
 *}
 Begin
- ReadLn(net_file,value,unit_prf);
- prefix:=file_prefix(unit_prf);
- if def_prefix='G' then begin   {Do not attach prefix for xHz}
- 	board_param:=value;
-	if prefix='x' then begin
-	   s_board[b_num,2]:='G';
-	   freq_prefix:='G'; {use default prefix}
-	end
-	else begin
-	   s_board[b_num,2]:=prefix;
-	   freq_prefix:=prefix;
-        end; 
- end
- else if prefix='x' then begin
- 	board_param:=value;
-	s_board[b_num,2]:=def_prefix; {use default prefix}
- end	
- else begin {if prefix is given}
-	board_param:=value*Eng_Prefix(prefix)/Eng_Prefix(def_prefix);
-	{return value in default units }
-	s_board[b_num,2]:=prefix;
- end;
- if (board_param > 0.0) or ((board_param=0.0) and zero_OK) then begin
-        board[b_num]:=true;
-	Str(value:7:3,s_board[b_num,1]);
-	if ((value < 1.0e-3) or (value > 1.0e+3)) and not(value=0.0) then 
-		Str(value:8,s_board[b_num,1]);
-		{Write in exponential notation for small/large numbers}
- end;
-end;
-	{****************************************************}
+  ReadLn(net_file,value,unit_prf);
+  prefix := file_prefix(unit_prf);
+  If def_prefix='G' Then
+    Begin   {Do not attach prefix for xHz}
+      board_param := value;
+      If prefix='x' Then
+        Begin
+          s_board[b_num,2] := 'G';
+          freq_prefix := 'G'; {use default prefix}
+        End
+      Else
+        Begin
+          s_board[b_num,2] := prefix;
+          freq_prefix := prefix;
+        End;
+    End
+  Else If prefix='x' Then
+         Begin
+           board_param := value;
+           s_board[b_num,2] := def_prefix; {use default prefix}
+         End
+  Else
+    Begin {if prefix is given}
+      board_param := value*Eng_Prefix(prefix)/Eng_Prefix(def_prefix);
+ {return value in default units }
+      s_board[b_num,2] := prefix;
+    End;
+  If (board_param > 0.0) Or ((board_param=0.0) And zero_OK) Then
+    Begin
+      board[b_num] := true;
+      Str(value:7:3,s_board[b_num,1]);
+      If ((value < 1.0e-3) Or (value > 1.0e+3)) And Not(value=0.0) Then
+        Str(value:8,s_board[b_num,1]);
+  {Write in exponential notation for small/large numbers}
+    End;
+End;
+ {****************************************************}
 
 Begin  {* Read_Board *}
-  {* Default parameters for old .puf files without new parameters *} 
-  for i:=9 to 12 do board[i]:=true;  {Make these parameters optional}
-  Art_Form:=0;   
-  Laser_Art:=False;
+  {* Default parameters for old .puf files without new parameters *}
+  For i:=9 To 12 Do
+    board[i] := true;  {Make these parameters optional}
+  Art_Form := 0;
+  Laser_Art := False;
   {initialize new parameters for old puff files}
-  metal_thickness:=0.0; s_board[9,1]:='  0.000'; s_board[9,2]:='m';
-  surface_roughness:=0.0; s_board[10,1]:='  0.000' ;s_board[10,2]:=Mu;
-  loss_tangent:=0.0; s_board[11,1]:='  0.000'; s_board[11,2]:=' ';
-  conductivity:=5.80e+7;s_board[12,1]:='  5.8E+7';s_board[12,2]:=' ';
-  repeat
-    if SeekEoln(net_file) then begin {ignore blank lines}
-	readln(net_file); {advance to beginning of next line}
-	char1:=' ';
-    end 
-    else begin
-	repeat 
-	     read(net_file,char1); 
-	until char1 <> ' ';
-	if char1 <> '\' then begin
-	     Read(net_file,char2);
-	     if (char2<>' ') then 
-	        repeat 
-		  read(net_file,char3)
-	        until char3=' ';
-	     case char1 of
-          'z','Z' : Attach_Prefix(1,' ',z0,false);
-          'f','F' : Attach_Prefix(2,'G',design_freq,false); 
-	  		{prefix not attached here}
-          'e','E' : begin
-                      ReadLn(net_file,er); {no units here}
-                      if er > 0 then begin
-		         board[3]:=true;
-			 Str(er:7:3,s_board[3,1]);
-			 s_board[3,2]:=' '; {no units}
-		      end;
-                    end;
-          'h','H' : Attach_Prefix(4,'m',substrate_h,false);	
-          's','S' : if (char2 in ['r','R']) then begin
-	  		Board[10]:=false; {init-optional value}
-			Attach_Prefix(10,Mu,surface_roughness,true);
-		    end
-		    else begin
-	  	      Attach_Prefix(5,'m',bmax,false);	
-                    end;
-          'c','C' : if (char2 in ['d','D']) then begin
-	  		board[12]:=false; {init-optional}
-			ReadLn(net_file,conductivity); {no units here}
-                        if (conductivity > 0) then begin
-		           board[12]:=true;
-			   Str(conductivity:8,s_board[12,1]);
-			   s_board[12,2]:=' '; {no units}
-		        end;
-	            end
-		    else
-		    	Attach_Prefix(6,'m',con_sep,true);
-          'r','R' : begin
-	  	      Attach_Prefix(7,'m',resln,false);
-		      sresln:=s_board[7,1]+s_board[7,2]+'m';
-                    end;
-          'a','A' : Attach_Prefix(8,'m',artwork_cor,true);
-          'm','M' : if (char2 in ['t','T']) then begin
-	  		Board[9]:=false; {init-optional value}
-			Attach_Prefix(9,'m',metal_thickness,true);
-		    end
-		    else begin
-                      Readln(net_file,miter_fraction);
-                      if (0 <= miter_fraction) and (miter_fraction < 1)
-                          then board[16]:=true;
-                    end;
-	  'l','L' : begin   {Loss Tangent}
-	  	      Board[11]:=false; {init-optional}	 
-                      ReadLn(net_file,loss_tangent); {no units here}
-                      if loss_tangent >= 0 then begin
-		         board[11]:=true;
-			 Str(loss_tangent:8,s_board[11,1]);
-			 s_board[11,2]:=' '; {no units}
-		      end;
-	            end;
-          'p','P' : begin
-                      ReadLn(net_file,reduction);
-                      if reduction > 0 then 
-		      	 if Laser_Art then begin  {setup 150 DPI}
-                        	psx:=red_lasr/reduction;
-				psy:=red_lasr/reduction;
-				board[13]:=true;
-			 end 
-			 else begin  {setup 144 x 120 DPI}
-                        	psx:=red_psx/reduction;
-				psy:=red_psy/reduction;
-				board[13]:=true;
-		      end; {if reduction and/or Laser_art}
-                    end;
-       	'd','D' : if read_graphics then begin
-			readln(net_file,value);
-			display:=Round(value);
-			board[14]:=true;
-			{ ignore the VGA/EGA setting on Linux }
-                        imin:=1;
-                    end
-                    else begin
-		    	ReadLn(net_file,value);
-			board[14]:=true;
-		    end;
-          'o','O' : begin   {* New entry for artwork output *}
-                      readln(net_file,value);
-                      Art_Form:= Round(value);
-		      if Art_Form = 1 then Laser_Art:=True;
-                    end;
-          't','T' : begin
-                      ReadLn(net_file,value);
-		      if (Round(value)=2) then begin
-		      	Manhattan_Board:=true;
-			stripline:=true; {makes calculations easier}
-		      end
-		      else begin
-		        Manhattan_Board:=false;
-                        stripline:= Round(value) <> 0; 
-		      end;	
-                      if (Round(value) in [0..2]) then board[15]:=true;
-                    end;
-             else begin
-                message[2]:='Unknown board';
-                message[3]:='parameter in .puf';
-                shutdown;
-             end;
-        end;{case char1}
-      end; {if char1}
-    end; {if SeekEoln}
-  until (char1='\') or EOF(net_file);
-  board_read:=board[1];
-  for i:=2 to 12 do 
-  	board_read:=board_read and board[i];
-  if board_read and not(read_graphics) then Fresh_Dimensions;
-end; {* Read_Board *}
+  metal_thickness := 0.0;
+  s_board[9,1] := '  0.000';
+  s_board[9,2] := 'm';
+  surface_roughness := 0.0;
+  s_board[10,1] := '  0.000' ;
+  s_board[10,2] := Mu;
+  loss_tangent := 0.0;
+  s_board[11,1] := '  0.000';
+  s_board[11,2] := ' ';
+  conductivity := 5.80e+7;
+  s_board[12,1] := '  5.8E+7';
+  s_board[12,2] := ' ';
+  Repeat
+    If SeekEoln(net_file) Then
+      Begin {ignore blank lines}
+        readln(net_file); {advance to beginning of next line}
+        char1 := ' ';
+      End
+    Else
+      Begin
+        Repeat
+          read(net_file,char1);
+        Until char1 <> ' ';
+        If char1 <> '\' Then
+          Begin
+            Read(net_file,char2);
+            If (char2<>' ') Then
+              Repeat
+                read(net_file,char3)
+              Until char3=' ';
+            Case char1 Of 
+              'z','Z' : Attach_Prefix(1,' ',z0,false);
+              'f','F' : Attach_Prefix(2,'G',design_freq,false);
+     {prefix not attached here}
+              'e','E' :
+                        Begin
+                          ReadLn(net_file,er); {no units here}
+                          If er > 0 Then
+                            Begin
+                              board[3] := true;
+                              Str(er:7:3,s_board[3,1]);
+                              s_board[3,2] := ' '; {no units}
+                            End;
+                        End;
+              'h','H' : Attach_Prefix(4,'m',substrate_h,false);
+              's','S' : If (char2 In ['r','R']) Then
+                          Begin
+                            Board[10] := false; {init-optional value}
+                            Attach_Prefix(10,Mu,surface_roughness,true);
+                          End
+                        Else
+                          Begin
+                            Attach_Prefix(5,'m',bmax,false);
+                          End;
+              'c','C' : If (char2 In ['d','D']) Then
+                          Begin
+                            board[12] := false; {init-optional}
+                            ReadLn(net_file,conductivity); {no units here}
+                            If (conductivity > 0) Then
+                              Begin
+                                board[12] := true;
+                                Str(conductivity:8,s_board[12,1]);
+                                s_board[12,2] := ' '; {no units}
+                              End;
+                          End
+                        Else
+                          Attach_Prefix(6,'m',con_sep,true);
+              'r','R' :
+                        Begin
+                          Attach_Prefix(7,'m',resln,false);
+                          sresln := s_board[7,1]+s_board[7,2]+'m';
+                        End;
+              'a','A' : Attach_Prefix(8,'m',artwork_cor,true);
+              'm','M' : If (char2 In ['t','T']) Then
+                          Begin
+                            Board[9] := false; {init-optional value}
+                            Attach_Prefix(9,'m',metal_thickness,true);
+                          End
+                        Else
+                          Begin
+                            Readln(net_file,miter_fraction);
+                            If (0 <= miter_fraction) And (miter_fraction < 1)
+                              Then board[16] := true;
+                          End;
+              'l','L' :
+                        Begin   {Loss Tangent}
+                          Board[11] := false; {init-optional}
+                          ReadLn(net_file,loss_tangent); {no units here}
+                          If loss_tangent >= 0 Then
+                            Begin
+                              board[11] := true;
+                              Str(loss_tangent:8,s_board[11,1]);
+                              s_board[11,2] := ' '; {no units}
+                            End;
+                        End;
+              'p','P' :
+                        Begin
+                          ReadLn(net_file,reduction);
+                          If reduction > 0 Then
+                            If Laser_Art Then
+                              Begin  {setup 150 DPI}
+                                psx := red_lasr/reduction;
+                                psy := red_lasr/reduction;
+                                board[13] := true;
+                              End
+                          Else
+                            Begin  {setup 144 x 120 DPI}
+                              psx := red_psx/reduction;
+                              psy := red_psy/reduction;
+                              board[13] := true;
+                            End; {if reduction and/or Laser_art}
+                        End;
+              'd','D' : If read_graphics Then
+                          Begin
+                            readln(net_file,value);
+                            display := Round(value);
+                            board[14] := true;
+   { ignore the VGA/EGA setting on Linux }
+                            imin := 1;
+                          End
+                        Else
+                          Begin
+                            ReadLn(net_file,value);
+                            board[14] := true;
+                          End;
+              'o','O' :
+                        Begin   {* New entry for artwork output *}
+                          readln(net_file,value);
+                          Art_Form := Round(value);
+                          If Art_Form = 1 Then Laser_Art := True;
+                        End;
+              't','T' :
+                        Begin
+                          ReadLn(net_file,value);
+                          If (Round(value)=2) Then
+                            Begin
+                              Manhattan_Board := true;
+                              stripline := true; {makes calculations easier}
+                            End
+                          Else
+                            Begin
+                              Manhattan_Board := false;
+                              stripline := Round(value) <> 0;
+                            End;
+                          If (Round(value) In [0..2]) Then board[15] := true;
+                        End;
+              Else
+                Begin
+                  message[2] := 'Unknown board';
+                  message[3] := 'parameter in .puf';
+                  shutdown;
+                End;
+            End;{case char1}
+          End; {if char1}
+      End; {if SeekEoln}
+  Until (char1='\') Or EOF(net_file);
+  board_read := board[1];
+  For i:=2 To 12 Do
+    board_read := board_read And board[i];
+  If board_read And Not(read_graphics) Then Fresh_Dimensions;
+End; {* Read_Board *}
 
 
-procedure Read_KeyO;
+Procedure Read_KeyO;
 {*
 	Read key from .puf file.
 *}
-var
- len,j,i 	: integer;
- des     	: line_string;
- c1,c2,c3,char1 : char;
 
-begin
-  for i:=1 to 6  do s_key[i]:=' ';
-  for i:=7 to 10 do s_key[i]:='';
-  repeat
-    if Eoln(net_file) then begin  {ignore blank lines}
-	readln(net_file);
-	char1:=' ';
-    end 
-    else begin
-	read(net_file,char1);  
-	des:='';
-	if char1 <> '\' then begin
-	     des:=char1;
-	     repeat
-	        read(net_file,char1);
-	        des:=des+char1;
-	     until (char1=lbrack) or Eoln(net_file);
-	     readln(net_file);
-	     c1:=des[1];
-	     c2:=des[2];
-	     c3:=des[3];
-	     while not(des[1]in ['+','-','.',',','0'..'9','e','E']) 
-                 do Delete(des,1,1);
-	     len:=length(des);
-	     while not(des[len]in ['+','-','.',',','0'..'9','e','E']) 
-	     		and (len > 0) do begin
-		Delete(des,len,1);
-		len:=length(des);
-	     end;
-	     case c1 of
-	     	'd','D' : if c2 in ['u','U'] then s_key[1]:=des 
-					     else s_key[2]:=des;
-                'f','F' : case c2 of
-                    		'l','L': s_key[3]:=des;
-				'u','U': s_key[4]:=des;
-				'd','D': if c3='/' then s_key[5]:=des
-			  end; {case}
-		'p','P' : s_key[5]:=des; {pts=number of points}	   
-                's','S' : if c2 in ['r','R'] then begin
-			     s_key[6]:=des;
-			  end 
-			  else begin
-			     j:=6;
-			     repeat
-			        j:=j+1;
-			     until (length(s_key[j])=0) or (j>9);
-			     s_key[j]:=des;
-			  end;
-	      end; {case}
-      end; {if char1 ..}
-    end; {if Eoln}
-  until (char1='\') or EOF(net_file);
-end; {* Read_Key *}
+Var 
+  len,j,i  : integer;
+  des      : line_string;
+  c1,c2,c3,char1 : char;
+
+Begin
+  For i:=1 To 6  Do
+    s_key[i] := ' ';
+  For i:=7 To 10 Do
+    s_key[i] := '';
+  Repeat
+    If Eoln(net_file) Then
+      Begin  {ignore blank lines}
+        readln(net_file);
+        char1 := ' ';
+      End
+    Else
+      Begin
+        read(net_file,char1);
+        des := '';
+        If char1 <> '\' Then
+          Begin
+            des := char1;
+            Repeat
+              read(net_file,char1);
+              des := des+char1;
+            Until (char1=lbrack) Or Eoln(net_file);
+            readln(net_file);
+            c1 := des[1];
+            c2 := des[2];
+            c3 := des[3];
+            While Not(des[1]In ['+','-','.',',','0'..'9','e','E']) 
+              Do
+              Delete(des,1,1);
+            len := length(des);
+            While Not(des[len]In ['+','-','.',',','0'..'9','e','E'])
+                  And (len > 0) Do
+              Begin
+                Delete(des,len,1);
+                len := length(des);
+              End;
+            Case c1 Of 
+              'd','D' : If c2 In ['u','U'] Then s_key[1] := des
+                        Else s_key[2] := des;
+              'f','F' : Case c2 Of 
+                          'l','L': s_key[3] := des;
+                          'u','U': s_key[4] := des;
+                          'd','D': If c3='/' Then s_key[5] := des
+                        End; {case}
+              'p','P' : s_key[5] := des; {pts=number of points}
+              's','S' : If c2 In ['r','R'] Then
+                          Begin
+                            s_key[6] := des;
+                          End
+                        Else
+                          Begin
+                            j := 6;
+                            Repeat
+                              j := j+1;
+                            Until (length(s_key[j])=0) Or (j>9);
+                            s_key[j] := des;
+                          End;
+            End; {case}
+          End; {if char1 ..}
+      End; {if Eoln}
+  Until (char1='\') Or EOF(net_file);
+End; {* Read_Key *}
 
 
-procedure read_partsO;
+Procedure read_partsO;
+
 {*
 	Read parts from .puf file. 
 	Called by Read_Net() in pfmain1a.pas.
 	Upon a call to read_partsO the read index has already 
 	advanced to the point where a '\p' has been read.
 *}
-var
+
+Var 
   char1  : char;
   i,j    : integer;
   des    : line_string;
   tcompt : compt;
 
-begin
-  Large_Parts:=False;
+Begin
+  Large_Parts := False;
   {* Clear previous parts list *}
-  for i:=1 to 18 do begin 	
-    	if i=1 then tcompt:=part_start 
-	       else tcompt:=tcompt^.next_compt;
-	with tcompt^ do begin
-		descript:=char(ord('a')+i-1)+' ';
-		used:=0; 
-		changed:=false; 
-		parsed:=false;
-		f_file:=nil;
-		s_file:=nil;
-		s_ifile:=nil;
-	end; {with}
-  end; {for i:=1 to 18}
-  j:=0;
-  repeat
-    if Eoln(net_file) then begin {if at end_of_line..}
-      	readln(net_file);        {do carriage return}
-	char1:=' '; 		 {initialize char1}
-    end
-    else begin
+  For i:=1 To 18 Do
+    Begin
+      If i=1 Then tcompt := part_start
+      Else tcompt := tcompt^.next_compt;
+      With tcompt^ Do
+        Begin
+          descript := char(ord('a')+i-1)+' ';
+          used := 0;
+          changed := false;
+          parsed := false;
+          f_file := Nil;
+          s_file := Nil;
+          s_ifile := Nil;
+        End; {with}
+    End; {for i:=1 to 18}
+  j := 0;
+  Repeat
+    If Eoln(net_file) Then
+      Begin {if at end_of_line..}
+        readln(net_file);        {do carriage return}
+        char1 := ' ';    {initialize char1}
+      End
+    Else
+      Begin
         read(net_file,char1);
-	if char1 <> '\' then begin {dont read first line with '\p'}
-        	readln(net_file,des); {read string}
-                insert(char1, des, 1);
-		Inc(j);
-		if j <= 18 then begin
-			i:=Pos(lbrack,des);
-			if i> 0 then Delete(des,i,length(des));
-			for i:=1 to length(des) do
-				case des[i] of
-				    'O' :  des[i]:=Omega;
-				    'D' :  des[i]:=Degree;
-				    'U' :  des[i]:=Mu;
-				    '|' :  des[i]:=Parallel;
-				end; {case}
-			while des[length(des)]=' ' do
-					delete(des,length(des),1);
-					{delete extra blanks}
-                        if j=1 then tcompt:=part_start
-			       else tcompt:=tcompt^.next_compt;
-			with tcompt^ do
-			    if (length(des) = 0) then
-			    	   changed:=true
-				   {descript:=descript}
-				   {leave part blank}
-				else begin
-				   descript:=descript+des;
-				   changed:=true;
-				   if (j>9) then Large_Parts:=True;
-			end; {if and with}
-		end; {if j <= 18}
-       end; {if char1<>'\'}
-    end; {else Eoln}
-  until (char1='\') or EOF(net_file);
-end; {read_partsO}
+        If char1 <> '\' Then
+          Begin {dont read first line with '\p'}
+            readln(net_file,des); {read string}
+            insert(char1, des, 1);
+            Inc(j);
+            If j <= 18 Then
+              Begin
+                i := Pos(lbrack,des);
+                If i> 0 Then Delete(des,i,length(des));
+                For i:=1 To length(des) Do
+                  Case des[i] Of 
+                    'O' :  des[i] := Omega;
+                    'D' :  des[i] := Degree;
+                    'U' :  des[i] := Mu;
+                    '|' :  des[i] := Parallel;
+                  End; {case}
+                While des[length(des)]=' ' Do
+                  delete(des,length(des),1);
+     {delete extra blanks}
+                If j=1 Then tcompt := part_start
+                Else tcompt := tcompt^.next_compt;
+                With tcompt^ Do
+                  If (length(des) = 0) Then
+                    changed := true
+       {descript:=descript}
+       {leave part blank}
+                  Else
+                    Begin
+                      descript := descript+des;
+                      changed := true;
+                      If (j>9) Then Large_Parts := True;
+                    End; {if and with}
+              End; {if j <= 18}
+          End; {if char1<>'\'}
+      End; {else Eoln}
+  Until (char1='\') Or EOF(net_file);
+End; {read_partsO}
 
 
-procedure read_circuitO;
+Procedure read_circuitO;
 {*
 	Read in circuit from .puf file.
 *}
-var
+
+Var 
   key_i,nn : integer;
   char1    : char;
 
-begin
-  circuit_changed:=true; 
-  key_end:=0;
-  repeat
-    if not(Eof(net_file)) then  {read circuit}
-    if Eoln(net_file) then begin  {ignore blank lines}
-      readln(net_file);
-      char1:=' ';
-    end 
-    else begin
-      read(net_file,char1);
-      if char1 <> '\' then begin
-        readln(net_file,key_i,nn);
-        key:= char(key_i);
-        update_key_list(nn);
-      end;{if char1}
-    end;{if Eoln}
-  until (char1='\') or EOF(net_file);
-  key_i:=0; {set_up for redraw}
-end; {read_circuitO}
+Begin
+  circuit_changed := true;
+  key_end := 0;
+  Repeat
+    If Not(Eof(net_file)) Then  {read circuit}
+      If Eoln(net_file) Then
+        Begin  {ignore blank lines}
+          readln(net_file);
+          char1 := ' ';
+        End
+    Else
+      Begin
+        read(net_file,char1);
+        If char1 <> '\' Then
+          Begin
+            readln(net_file,key_i,nn);
+            key := char(key_i);
+            update_key_list(nn);
+          End;{if char1}
+      End;{if Eoln}
+  Until (char1='\') Or EOF(net_file);
+  key_i := 0; {set_up for redraw}
+End; {read_circuitO}
 
 
 
@@ -448,256 +518,280 @@ Procedure Read_S_Params;
 	Read s-parameters from .puf file.
 	Uses procedure Read_Number.
 *}
-var
+
+Var 
   ij          : integer;
   freq,mag,ph : double;
   char1       : char;
 
-	{********************************************************}
-Procedure Read_Number(var s : double);
+ {********************************************************}
+Procedure Read_Number(Var s : double);
 {*
 	Read s-parameter values from files.
 *}
-Const
-  potential_numbers=['+','-','.','0'..'9','e','E'];
 
-Var
-  ss	: string[128];
-  code	: integer;
-  found	: boolean;
+Const 
+  potential_numbers = ['+','-','.','0'..'9','e','E'];
+
+Var 
+  ss : string[128];
+  code : integer;
+  found : boolean;
 
 Begin
-  ss:='';
-  if char1 in potential_numbers then
-  	ss:=char1  {char1 is the first freq character}
-  else begin  {Search for first valid numeric character}
-    	found:=false;
-	if char1 in [lbrack,'#','!'] then ReadLn(net_file);
-	{skip potential comment lines}
-	Repeat 
-    	   Read(net_file,char1); 	{read another character}
-	   if char1 in [lbrack,'#','!'] then ReadLn(net_file);
-	   	 {skip potential comment lines}
-	   if char1 in potential_numbers then begin
-	      ss:=char1;
-	      found:=true;
-	   end;
-        Until found or (char1='\');
-  end;
-  found:=false;
-  if not(char1='\') then
-     Repeat {Add to string ss}
-     	Read(net_file,char1);
-	if char1 in potential_numbers then 
-		ss:=ss+char1 
-             else 
-	        found:=true;
-     Until found or Eoln(net_file);
-  if (ss<>'') then begin
-  	Val(ss,s,code);
-	if (code<>0) then s:=0.0;
-  end
-  else 
-  	s:=0.0;
+  ss := '';
+  If char1 In potential_numbers Then
+    ss := char1  {char1 is the first freq character}
+  Else
+    Begin  {Search for first valid numeric character}
+      found := false;
+      If char1 In [lbrack,'#','!'] Then ReadLn(net_file);
+ {skip potential comment lines}
+      Repeat
+        Read(net_file,char1);  {read another character}
+        If char1 In [lbrack,'#','!'] Then ReadLn(net_file);
+      {skip potential comment lines}
+        If char1 In potential_numbers Then
+          Begin
+            ss := char1;
+            found := true;
+          End;
+      Until found Or (char1='\');
+    End;
+  found := false;
+  If Not(char1='\') Then
+    Repeat {Add to string ss}
+      Read(net_file,char1);
+      If char1 In potential_numbers Then
+        ss := ss+char1
+      Else
+        found := true;
+    Until found Or Eoln(net_file);
+  If (ss<>'') Then
+    Begin
+      Val(ss,s,code);
+      If (code<>0) Then s := 0.0;
+    End
+  Else
+    s := 0.0;
   { turn string ss into double number }
-end; {read_number}
-	{********************************************************}
+End; {read_number}
+ {********************************************************}
 
 Begin   {* Read_S_Params *}
-  filled_OK:=true;
-  npts:=-1;
+  filled_OK := true;
+  npts := -1;
   ReadLn(net_file); {Advance through \s comment line}
-  for ij:=1 to max_params do begin
-	s_param_table[ij]^.calc:=false;
-	c_plot[ij]:=nil;
-	plot_des[ij]:=nil;
-  end;
+  For ij:=1 To max_params Do
+    Begin
+      s_param_table[ij]^.calc := false;
+      c_plot[ij] := Nil;
+      plot_des[ij] := Nil;
+    End;
   Repeat
-    if Eoln(net_file) then begin {ignore blank lines}
-	ReadLn(net_file);
-	char1:=' ';
-    end 
-    else begin
-	Read(net_file,char1);
-	if (char1<>'\') and (npts+1 < ptmax) then begin
-		Read_Number(freq); 
-		Inc(npts); 
-		if npts=0 then fmin:=freq;
-		ij:=0;
-		repeat
-		   Inc(ij);
-		   if c_plot[ij]=nil then c_plot[ij]:=plot_start[ij]
-                                     else c_plot[ij]:=c_plot[ij]^.next_p;
-		   if abs(freq-design_freq)=0 then  
-		   	plot_des[ij]:=c_plot[ij];
-			{restore markers to fd}
-		   s_param_table[ij]^.calc:=true;
-		   c_plot[ij]^.filled:=true;
-		   read(net_file,mag,ph);
-		   c_plot[ij]^.x:=mag*cos(ph*pi/180);
-		   c_plot[ij]^.y:=mag*sin(ph*pi/180);
-		until Eoln(net_file) or (ij=max_params);
-		Readln(net_file);
-	end; {if char}
-    end; {if Eoln else}
-  until (char1='\') or EOF(net_file);
-  if npts<=1 then filled_OK:=false;
-  for ij:=1 to max_params do plot_end[ij]:=c_plot[ij];
-  finc:=(freq-fmin)/npts;
-end; {* Read_S_Params *}
+    If Eoln(net_file) Then
+      Begin {ignore blank lines}
+        ReadLn(net_file);
+        char1 := ' ';
+      End
+    Else
+      Begin
+        Read(net_file,char1);
+        If (char1<>'\') And (npts+1 < ptmax) Then
+          Begin
+            Read_Number(freq);
+            Inc(npts);
+            If npts=0 Then fmin := freq;
+            ij := 0;
+            Repeat
+              Inc(ij);
+              If c_plot[ij]=Nil Then c_plot[ij] := plot_start[ij]
+              Else c_plot[ij] := c_plot[ij]^.next_p;
+              If abs(freq-design_freq)=0 Then
+                plot_des[ij] := c_plot[ij];
+   {restore markers to fd}
+              s_param_table[ij]^.calc := true;
+              c_plot[ij]^.filled := true;
+              read(net_file,mag,ph);
+              c_plot[ij]^.x := mag*cos(ph*pi/180);
+              c_plot[ij]^.y := mag*sin(ph*pi/180);
+            Until Eoln(net_file) Or (ij=max_params);
+            Readln(net_file);
+          End; {if char}
+      End; {if Eoln else}
+  Until (char1='\') Or EOF(net_file);
+  If npts<=1 Then filled_OK := false;
+  For ij:=1 To max_params Do
+    plot_end[ij] := c_plot[ij];
+  finc := (freq-fmin)/npts;
+End; {* Read_S_Params *}
 
 
 
-procedure Save_BoardO;
+Procedure Save_BoardO;
 {*
 	Save board parameters to .puf file.
 *}
-var
- sl,i :integer;
 
-begin
-  for i:=1 to 12 do begin        {* Convert Mu's to U's *}
-  	if s_board[i,2]=Mu then s_board[i,2]:='U';
-  end;
+Var 
+  sl,i : integer;
+
+Begin
+  For i:=1 To 12 Do
+    Begin        {* Convert Mu's to U's *}
+      If s_board[i,2]=Mu Then s_board[i,2] := 'U';
+    End;
   writeln(net_file,'\b',lbrack,'oard',rbrack,' ',
-                        lbrack,'.puf file for PUFF, version 2.1d',rbrack);
+          lbrack,'.puf file for PUFF, version 2.1d',rbrack);
   writeln(net_file,'d ',display:6,'     ',lbrack,
-  'display: 0 VGA or PUFF chooses, 1 EGA',rbrack);
+          'display: 0 VGA or PUFF chooses, 1 EGA',rbrack);
   writeln(net_file,'o ',Art_Form:6,'     ',lbrack,
-  'artwork output format: 0 dot-matrix, 1 LaserJet, 2 HPGL file',rbrack);
-  if Manhattan_Board then sl:=2
-    else if stripline then sl:=1 else sl:=0;
+          'artwork output format: 0 dot-matrix, 1 LaserJet, 2 HPGL file',rbrack);
+  If Manhattan_Board Then sl := 2
+  Else If stripline Then sl := 1
+  Else sl := 0;
   writeln(net_file,'t ',sl:6,'     ',lbrack,
-  'type: 0 for microstrip, 1 for stripline, 2 for Manhattan',rbrack);
+          'type: 0 for microstrip, 1 for stripline, 2 for Manhattan',rbrack);
   writeln(net_file,'zd  ',s_board[1,1]+' '+s_board[1,2]+'Ohms ',lbrack,
-  'normalizing impedance. 0<zd',rbrack);
+          'normalizing impedance. 0<zd',rbrack);
   writeln(net_file,'fd  ',s_board[2,1]+' '+s_board[2,2]+'Hz   ',lbrack,
-  'design frequency. 0<fd',rbrack);
+          'design frequency. 0<fd',rbrack);
   writeln(net_file,'er  ',s_board[3,1]+'       ',lbrack,
-  'dielectric constant. er>0',rbrack);
+          'dielectric constant. er>0',rbrack);
   writeln(net_file,'h   ',s_board[4,1]+' '+s_board[4,2]+'m    ',lbrack,
-  'dielectric thickness. h>0',rbrack);
+          'dielectric thickness. h>0',rbrack);
   writeln(net_file,'s   ',s_board[5,1]+' '+s_board[5,2]+'m    ',lbrack,
-  'circuit-board side length. s>0',rbrack);
+          'circuit-board side length. s>0',rbrack);
   writeln(net_file,'c   ',s_board[6,1]+' '+s_board[6,2]+'m    ',lbrack,
-  'connector separation. c>=0',rbrack);
+          'connector separation. c>=0',rbrack);
   writeln(net_file,'r   ',s_board[7,1]+' '+s_board[7,2]+'m    ',lbrack,
-  'circuit resolution, r>0, use Um for micrometers', rbrack);
+          'circuit resolution, r>0, use Um for micrometers', rbrack);
   writeln(net_file,'a   ',s_board[8,1]+' '+s_board[8,2]+'m    ',lbrack,
-  'artwork width correction.',rbrack);
+          'artwork width correction.',rbrack);
   writeln(net_file,'mt  ',s_board[9,1]+' '+s_board[9,2]+'m    ',lbrack,
-  'metal thickness, use Um for micrometers.',rbrack);
+          'metal thickness, use Um for micrometers.',rbrack);
   writeln(net_file,'sr  ',s_board[10,1]+' '+s_board[10,2]+'m    ',lbrack,
-  'metal surface roughness, use Um for micrometers.',rbrack);
+          'metal surface roughness, use Um for micrometers.',rbrack);
   writeln(net_file,'lt   ',s_board[11,1]+'   ',lbrack,
-  'dielectric loss tangent.',rbrack);
+          'dielectric loss tangent.',rbrack);
   writeln(net_file,'cd   ',s_board[12,1]+'   ',lbrack,
-  'conductivity of metal in mhos/meter.',rbrack);
+          'conductivity of metal in mhos/meter.',rbrack);
   writeln(net_file,'p   ',reduction:7:3,'       ',lbrack,
-  'photographic reduction ratio. p<=203.2mm/s',rbrack);
+          'photographic reduction ratio. p<=203.2mm/s',rbrack);
   writeln(net_file,'m   ',miter_fraction:7:3,'       ',lbrack,
-  'mitering fraction.  0<=m<1',rbrack);
-  for i:=1 to 12 do begin        {* Convert U's back to Mu's *}
-  	if s_board[i,2]='U' then s_board[i,2]:=Mu;
-  end;
-end; {save_boardO}
+          'mitering fraction.  0<=m<1',rbrack);
+  For i:=1 To 12 Do
+    Begin        {* Convert U's back to Mu's *}
+      If s_board[i,2]='U' Then s_board[i,2] := Mu;
+    End;
+End; {save_boardO}
 
 
-procedure save_keyO;
+Procedure save_keyO;
 {*
 	Save Plot window parameters to .puf file.
 *}
-var
+
+Var 
   tcompt : compt;
   i      : integer;
   temp   : line_string;
 
-begin
+Begin
   writeln(net_file,'\k',lbrack,'ey for plot window',rbrack);
-  for i:=1 to 10 do begin
-    if i=1 then tcompt:=coord_start else tcompt:=tcompt^.next_compt;
-    with tcompt^ do
-    case i of
-      1   :  writeln(net_file,'du  '+descript,
-                     '   ',lbrack,'upper dB-axis limit',rbrack);
-      2   :  writeln(net_file,'dl  '+descript,
-                     '   ',lbrack,'lower dB-axis limit',rbrack);
-      3   :  writeln(net_file,'fl  '+descript,
-                     '   ',lbrack,'lower frequency limit. fl>=0',rbrack);
-      4   :  writeln(net_file,'fu  '+descript,
-                     '   ',lbrack,'upper frequency limit. fu>fl',rbrack);
-      5   :  begin
-               temp:=descript;
-               delete(temp,1,6); {delete "Points"}
-               writeln(net_file,'pts'+temp,
-            '   ',lbrack,'number of points, positive integer',rbrack);
-             end;
-      6   :  begin
-               temp:=descript;
-               delete(temp,1,12);
-               writeln(net_file,'sr'+temp,
-                '   ',lbrack,'Smith-chart radius. sr>0',rbrack);
-             end;
-     7..10:  begin
-               temp:=descript;
-               delete(temp,1,1);
-               if length(temp) > 0 then begin
-                 write(net_file,'S   '+temp);
-                 if i=7 then writeln(net_file,
-                       '   ',lbrack,'subscripts must be 1, 2, 3, or 4',rbrack)
-                        else writeln(net_file);
-                 end;
-             end;
-    end; {case}
-  end; {i}
-end; {save_keyO}
+  For i:=1 To 10 Do
+    Begin
+      If i=1 Then tcompt := coord_start
+      Else tcompt := tcompt^.next_compt;
+      With tcompt^ Do
+        Case i Of 
+          1   :  writeln(net_file,'du  '+descript,
+                         '   ',lbrack,'upper dB-axis limit',rbrack);
+          2   :  writeln(net_file,'dl  '+descript,
+                         '   ',lbrack,'lower dB-axis limit',rbrack);
+          3   :  writeln(net_file,'fl  '+descript,
+                         '   ',lbrack,'lower frequency limit. fl>=0',rbrack);
+          4   :  writeln(net_file,'fu  '+descript,
+                         '   ',lbrack,'upper frequency limit. fu>fl',rbrack);
+          5   :
+                Begin
+                  temp := descript;
+                  delete(temp,1,6); {delete "Points"}
+                  writeln(net_file,'pts'+temp,
+                          '   ',lbrack,'number of points, positive integer',rbrack);
+                End;
+          6   :
+                Begin
+                  temp := descript;
+                  delete(temp,1,12);
+                  writeln(net_file,'sr'+temp,
+                          '   ',lbrack,'Smith-chart radius. sr>0',rbrack);
+                End;
+          7..10:
+                 Begin
+                   temp := descript;
+                   delete(temp,1,1);
+                   If length(temp) > 0 Then
+                     Begin
+                       write(net_file,'S   '+temp);
+                       If i=7 Then writeln(net_file,
+                                           '   ',lbrack,'subscripts must be 1, 2, 3, or 4',rbrack)
+                       Else writeln(net_file);
+                     End;
+                 End;
+        End; {case}
+    End; {i}
+End; {save_keyO}
 
 
-procedure Save_PartsO;
+Procedure Save_PartsO;
 {*
 	Save list of parts to .puf file.
 *}
-var
+
+Var 
   tcompt : compt;
   des    : line_string;
   i      : integer;
 
-begin
-  tcompt:=nil;
+Begin
+  tcompt := Nil;
   writeln(net_file,'\p',lbrack,'arts window',rbrack,' ',
-        lbrack,'O = Ohms, D = degrees, U = micro, |=parallel',rbrack);
-  repeat {write component list}
-    if tcompt=nil then 
-    		tcompt:=part_start  {find starting pointer}
-	      else 
-	    	tcompt:=tcompt^.next_compt; { or find next }
-    des:=tcompt^.descript;
-    if length(des) > 2 then begin  {if descript more than just a letter}
-      	Delete(des,1,2); {delete part letter designation}
-	for i:=1 to length(des) do
-      	     case des[i] of  	{change to O's, D's, U's, and |'s}
-        	Omega  : des[i]:='O';
-		Degree : des[i]:='D';
-		Mu     : des[i]:='U';
-		Parallel : des[i]:='|';
-	     end; {case}
-	writeln(net_file,des); 
-     end    {if length(des) > 2}
-     else   {write blank message }
-        writeln(net_file,lbrack,'Blank at Part ',des,rbrack); 
-  until tcompt^.next_compt=nil;
-end; {* Save_PartsO *}
+          lbrack,'O = Ohms, D = degrees, U = micro, |=parallel',rbrack);
+  Repeat {write component list}
+    If tcompt=Nil Then
+      tcompt := part_start  {find starting pointer}
+    Else
+      tcompt := tcompt^.next_compt; { or find next }
+    des := tcompt^.descript;
+    If length(des) > 2 Then
+      Begin  {if descript more than just a letter}
+        Delete(des,1,2); {delete part letter designation}
+        For i:=1 To length(des) Do
+          Case des[i] Of   {change to O's, D's, U's, and |'s}
+            Omega  : des[i] := 'O';
+            Degree : des[i] := 'D';
+            Mu     : des[i] := 'U';
+            Parallel : des[i] := '|';
+          End; {case}
+        writeln(net_file,des);
+      End    {if length(des) > 2}
+    Else   {write blank message }
+      writeln(net_file,lbrack,'Blank at Part ',des,rbrack);
+  Until tcompt^.next_compt=Nil;
+End; {* Save_PartsO *}
 
 
-procedure save_circuitO;
+Procedure save_circuitO;
 {*
 	Save circuit to .puf file.
 *}
-begin
-  for key_i:=1 to key_end do begin
-    if key_i=1 then writeln(net_file,'\c',lbrack,'ircuit',rbrack);
-    write(net_file,ord(key_list[key_i].keyl):4,key_list[key_i].noden:4);
-    case key_list[key_i].keyl of
+Begin
+  For key_i:=1 To key_end Do
+    Begin
+      If key_i=1 Then writeln(net_file,'\c',lbrack,'ircuit',rbrack);
+      write(net_file,ord(key_list[key_i].keyl): 4,key_list[key_i].noden: 4);
+      Case key_list[key_i].keyl Of 
         right_arrow : writeln(net_file,'  right');
         left_arrow  : writeln(net_file,'  left');
         down_arrow  : writeln(net_file,'  down');
@@ -712,115 +806,124 @@ begin
         sh_4        : writeln(net_file,'  shift-4');
         '+'         : writeln(net_file,'  shift-=');
         Ctrl_n      : writeln(net_file,'  Ctrl-n');
-          else        writeln(net_file,'  ',key_list[key_i].keyl);
-      end; {case}
-  end; {for key_i}
-end; {save_circuitO}
+        Else        writeln(net_file,'  ',key_list[key_i].keyl);
+      End; {case}
+    End; {for key_i}
+End; {save_circuitO}
 
 
 Procedure save_s_paramsO;
 {*
 	Save s-parameters to .puf file.
 *}
-var
+
+Var 
   number_of_parameters,ij,txpt  : integer;
-  first_line 			: string[120];
-  mag,deg    			: double;
-  last_plot_ptr			: array [1..max_params] of plot_param;
+  first_line    : string[120];
+  mag,deg       : double;
+  last_plot_ptr   : array [1..max_params] Of plot_param;
 
-begin
-  if filled_OK then begin
-    writeln(net_file,'\s',lbrack,'parameters',rbrack);
-    number_of_parameters:=0;
-    first_line:='';
-    for ij:=1 to max_params do
-      if s_param_table[ij]^.calc then begin
-        last_plot_ptr[ij]:=c_plot[ij];  {save last plot position}
-	c_plot[ij]:=nil;
-	if first_line='' then 
-	   first_line:='   f              '+s_param_table[ij]^.descript
-         else 
-	  first_line:=first_line+'              '+s_param_table[ij]^.descript;
-        number_of_parameters:=number_of_parameters+1;
-    end; {for ij;if s_param_table}
-    writeln(net_file,first_line);
-    for txpt:=0 to npts do begin
-	  freq:=fmin+finc*txpt;
-	  write(net_file,freq:9:5);
-	  for ij:=1 to max_params do
-	      if s_param_table[ij]^.calc then begin
-		   if c_plot[ij]=nil then c_plot[ij]:=plot_start[ij]
-                     		     else c_plot[ij]:=c_plot[ij]^.next_p;
-		   mag:=sqrt(sqr(c_plot[ij]^.x)+sqr(c_plot[ij]^.y));
-		   deg:=atan2(c_plot[ij]^.x,c_plot[ij]^.y);
-		   if betweenr(0.1,mag,99.0,0.0) then 
-		   		write(net_file,mag:10:5,' ',deg:6:1)
-                         else 
-			 	write(net_file,' ',mag:9,' ',deg:6:1)
-	   end; {for ij ; if s_param_table}
-           writeln(net_file);
-    end; {for txpt:=0 to npts}
-    for ij:=1 to max_params do
-      if s_param_table[ij]^.calc then 
-        c_plot[ij]:=last_plot_ptr[ij];  {restore last plot position}
-  end;{if filled_OK}
-end; {save_s_paramsO}
+Begin
+  If filled_OK Then
+    Begin
+      writeln(net_file,'\s',lbrack,'parameters',rbrack);
+      number_of_parameters := 0;
+      first_line := '';
+      For ij:=1 To max_params Do
+        If s_param_table[ij]^.calc Then
+          Begin
+            last_plot_ptr[ij] := c_plot[ij];  {save last plot position}
+            c_plot[ij] := Nil;
+            If first_line='' Then
+              first_line := '   f              '+s_param_table[ij]^.descript
+            Else
+              first_line := first_line+'              '+s_param_table[ij]^.descript;
+            number_of_parameters := number_of_parameters+1;
+          End; {for ij;if s_param_table}
+      writeln(net_file,first_line);
+      For txpt:=0 To npts Do
+        Begin
+          freq := fmin+finc*txpt;
+          write(net_file,freq:9:5);
+          For ij:=1 To max_params Do
+            If s_param_table[ij]^.calc Then
+              Begin
+                If c_plot[ij]=Nil Then c_plot[ij] := plot_start[ij]
+                Else c_plot[ij] := c_plot[ij]^.next_p;
+                mag := sqrt(sqr(c_plot[ij]^.x)+sqr(c_plot[ij]^.y));
+                deg := atan2(c_plot[ij]^.x,c_plot[ij]^.y);
+                If betweenr(0.1,mag,99.0,0.0) Then
+                  write(net_file,mag:10:5,' ',deg:6:1)
+                Else
+                  write(net_file,' ',mag:9,' ',deg:6:1)
+              End; {for ij ; if s_param_table}
+          writeln(net_file);
+        End; {for txpt:=0 to npts}
+      For ij:=1 To max_params Do
+        If s_param_table[ij]^.calc Then
+          c_plot[ij] := last_plot_ptr[ij];  {restore last plot position}
+    End;{if filled_OK}
+End; {save_s_paramsO}
 
 
-procedure bad_board;
+Procedure bad_board;
 {*
    Give error message when bad board element is present.
 *}
-var
-  i :integer;
-begin
+
+Var 
+  i : integer;
+Begin
   erase_message;
-  message[2]:='Bad or invalid';
-  i:=0;
-  repeat
-    i:=i+1;
-    if not(board[i]) then begin
-      case i of
-         1 : message[3]:='zd';
-         2 : message[3]:='fd';
-         3 : message[3]:='er';
-         4 : message[3]:='h';
-         5 : message[3]:='s';
-         6 : message[3]:='c';
-         7 : message[3]:='r';
-         8 : message[3]:='a';
-         9 : message[3]:='mt';
-        10 : message[3]:='sr';
-        11 : message[3]:='lt';
-        12 : message[3]:='cd';
-        13 : message[3]:='p';
-        14 : message[3]:='d';
-        15 : message[3]:='t';
-        16 : message[3]:='m';
-      end;{case}
-      message[3]:=message[3]+' in .puf file'
-    end;
-  until not(board[i]);
+  message[2] := 'Bad or invalid';
+  i := 0;
+  Repeat
+    i := i+1;
+    If Not(board[i]) Then
+      Begin
+        Case i Of 
+          1 : message[3] := 'zd';
+          2 : message[3] := 'fd';
+          3 : message[3] := 'er';
+          4 : message[3] := 'h';
+          5 : message[3] := 's';
+          6 : message[3] := 'c';
+          7 : message[3] := 'r';
+          8 : message[3] := 'a';
+          9 : message[3] := 'mt';
+          10 : message[3] := 'sr';
+          11 : message[3] := 'lt';
+          12 : message[3] := 'cd';
+          13 : message[3] := 'p';
+          14 : message[3] := 'd';
+          15 : message[3] := 't';
+          16 : message[3] := 'm';
+        End;{case}
+        message[3] := message[3]+' in .puf file'
+      End;
+  Until Not(board[i]);
   shutdown;
-end; {* bad_board *}
+End; {* bad_board *}
 
 
-procedure read_setup(var fname2 : file_string);
+Procedure read_setup(Var fname2 : file_string);
 {*
 	Read board parameters in setup.puf.
 *}
-var
+
+Var 
   char1,char2 : char;
 
-begin
-  if setupexists(fname2) then begin
+Begin
+  If setupexists(fname2) Then
+    Begin
       Repeat
-         ReadLn(net_file,char1,char2);
-      until ((char1='\') and (char2 in ['b','B'])) or Eof(net_file);
-      if not(EOF(net_file)) then Read_Board(true);
+        ReadLn(net_file,char1,char2);
+      Until ((char1='\') And (char2 In ['b','B'])) Or Eof(net_file);
+      If Not(EOF(net_file)) Then Read_Board(true);
       Close(net_file);
-  end;
-end; {* read_setup *}
+    End;
+End; {* read_setup *}
 
 
 

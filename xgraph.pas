@@ -1,3 +1,4 @@
+
 {-----------------------------------------------------------------------
 
 This unit declares a unit containing procedures etc. that are normally
@@ -32,67 +33,111 @@ Unit xgraph;
 Interface
 
 
-TYPE
+Type 
   ViewPortType = Record
     X1,Y1,X2,Y2 : Integer;
     Clip : Boolean
-  end;
+  End;
 
 
-Procedure InitGraph (var GraphDriver,GraphModus : integer; const PathToDriver : string); cdecl; external;
-Procedure CloseGraph ; cdecl; external;
+Procedure InitGraph (Var GraphDriver,GraphModus : integer; Const PathToDriver : String);
+cdecl;
+external;
+Procedure CloseGraph ;
+cdecl;
+external;
 
-Procedure SetColor (Color : Longint); cdecl; external;
-Procedure SetFillStyle (Pattern,Color : Longint); cdecl; external;
-Procedure SetLineStyle (LineStyle,Pattern,Width : Longint); cdecl; external;
+Procedure SetColor (Color : Longint);
+cdecl;
+external;
+Procedure SetFillStyle (Pattern,Color : Longint);
+cdecl;
+external;
+Procedure SetLineStyle (LineStyle,Pattern,Width : Longint);
+cdecl;
+external;
 
-Procedure Line (X1,Y1,X2,Y2 : Longint); cdecl; external;
-Procedure PutPixel (X,Y : Longint; Color : Longint); cdecl; external;
-Procedure Bar (X1,Y1,X2,Y2 : Longint); cdecl; external;
-Procedure Rectangle (X1,Y1,X2,Y2 : Longint); cdecl; external;
-Procedure Arc (X,Y : Longint; start,stop, radius : Longint); cdecl; external;
-Procedure FillEllipse (X,Y : Longint; Xradius,YRadius: Longint); cdecl; external;
-Procedure Circle (X,Y : Longint; Radius : Longint); cdecl; external;
-Procedure FloodFill (X,Y : Longint; BorderColor : Longint); cdecl; external;
+Procedure Line (X1,Y1,X2,Y2 : Longint);
+cdecl;
+external;
+Procedure PutPixel (X,Y : Longint; Color : Longint);
+cdecl;
+external;
+Procedure Bar (X1,Y1,X2,Y2 : Longint);
+cdecl;
+external;
+Procedure Rectangle (X1,Y1,X2,Y2 : Longint);
+cdecl;
+external;
+Procedure Arc (X,Y : Longint; start,stop, radius : Longint);
+cdecl;
+external;
+Procedure FillEllipse (X,Y : Longint; Xradius,YRadius: Longint);
+cdecl;
+external;
+Procedure Circle (X,Y : Longint; Radius : Longint);
+cdecl;
+external;
+Procedure FloodFill (X,Y : Longint; BorderColor : Longint);
+cdecl;
+external;
 
-Procedure SetTextJustify (Horizontal,Vertical : Longint); cdecl; external;
+Procedure SetTextJustify (Horizontal,Vertical : Longint);
+cdecl;
+external;
 Procedure OutTextXY (X,Y : Integer; Const TextString : String);
 
-Procedure SetViewPort (X1,Y1,X2,Y2 : Longint; Clip : Boolean); cdecl; external;
+Procedure SetViewPort (X1,Y1,X2,Y2 : Longint; Clip : Boolean);
+cdecl;
+external;
 
-Function GetBkColor : Longint; cdecl; external;
-Procedure SetBkColor (Color : Longint); cdecl; external;
+Function GetBkColor : Longint;
+cdecl;
+external;
+Procedure SetBkColor (Color : Longint);
+cdecl;
+external;
 
-Function GraphErrorMsg (ErrorCode : Longint) : String; cdecl; external;
-Function GraphResult : Longint; cdecl; external;
-
-
-Procedure GetBox(bn, x, y, width, height: Longint); cdecl; external;
-Procedure PutBox(bn, x, y, width, height: Longint); cdecl; external;
-
-
-VAR
-  ScreenHeight:integer; external name 'ScreenHeight';
-  ScreenWidth:integer; external name 'ScreenWidth';
-
-
-CONST
-  SOLIDFILL=0;
-  lefttext=0;
-  centertext=1;
-  righttext=2;
-  userbitln=4;
-  normwidth=1;
-  solidln=0;
-  VGA=0;
-  EGA=1;
-  GROK=0;
+Function GraphErrorMsg (ErrorCode : Longint) : String;
+cdecl;
+external;
+Function GraphResult : Longint;
+cdecl;
+external;
 
 
+Procedure GetBox(bn, x, y, width, height: Longint);
+cdecl;
+external;
+Procedure PutBox(bn, x, y, width, height: Longint);
+cdecl;
+external;
+
+
+Var 
+  ScreenHeight: integer;
+  external name 'ScreenHeight';
+  ScreenWidth: integer;
+  external name 'ScreenWidth';
+
+
+Const 
+  SOLIDFILL = 0;
+  lefttext = 0;
+  centertext = 1;
+  righttext = 2;
+  userbitln = 4;
+  normwidth = 1;
+  solidln = 0;
+  VGA = 0;
+  EGA = 1;
+  GROK = 0;
 
 
 
-CONST
+
+
+Const 
   Black = 0;
   Blue = 1;
   Green = 2;
@@ -117,20 +162,44 @@ CONST
 
 
 
-Procedure Window (X1, Y1, X2, Y2: Longint); cdecl; external name 'crtWindow';
-Procedure GotoXY (X: Longint; Y: Longint); cdecl; external;
-Procedure Sound (hz : Longint); cdecl; external;
-Procedure Delay (DTime: Longint); cdecl; external;
-Procedure NoSound ; cdecl; external;
-Function KeyPressed : Boolean; cdecl; external;
-Function ReadKey : Char; cdecl; external;
-procedure TextMode(Mode: Longint); cdecl; external;
-Procedure TextColor (CL: Longint); cdecl; external;
-Procedure TextBackground (CL: Longint); cdecl; external;
-Procedure ClrScr ; cdecl; external;
+Procedure Window (X1, Y1, X2, Y2: Longint);
+cdecl;
+external name 'crtWindow';
+Procedure GotoXY (X: Longint; Y: Longint);
+cdecl;
+external;
+Procedure Sound (hz : Longint);
+cdecl;
+external;
+Procedure Delay (DTime: Longint);
+cdecl;
+external;
+Procedure NoSound ;
+cdecl;
+external;
+Function KeyPressed : Boolean;
+cdecl;
+external;
+Function ReadKey : Char;
+cdecl;
+external;
+Procedure TextMode(Mode: Longint);
+cdecl;
+external;
+Procedure TextColor (CL: Longint);
+cdecl;
+external;
+Procedure TextBackground (CL: Longint);
+cdecl;
+external;
+Procedure ClrScr ;
+cdecl;
+external;
 
 
-Function GetTimerTicks : Integer; cdecl; external;
+Function GetTimerTicks : Integer;
+cdecl;
+external;
 
 
 
@@ -138,49 +207,57 @@ Function GetTimerTicks : Integer; cdecl; external;
 Implementation
 
 
-uses dos,linux;
+Uses dos,linux;
 
 
 
 
-Procedure C_OutTextXY (X,Y : Longint; Var TextString : String); cdecl; external;
+Procedure C_OutTextXY (X,Y : Longint; Var TextString : String);
+cdecl;
+external;
 
 Procedure OutTextXY (X,Y : Integer; Const TextString : String);
-var s: string;
-begin
-   s:=TextString;
-   C_OutTextXY(X,Y,s);
-end;
+
+Var s: string;
+Begin
+  s := TextString;
+  C_OutTextXY(X,Y,s);
+End;
 
 
 
 
 { write(ln) and readln support code based on rtl/linux/crt.pp from the fpc source tree }
 
-procedure DoWrite(var s: string); cdecl; external;
-procedure DoWriteEnd; cdecl; external;
+Procedure DoWrite(Var s: String);
+cdecl;
+external;
+Procedure DoWriteEnd;
+cdecl;
+external;
 
 
 Function xgraphWrite(Var F: TextRec): Integer;
-Var
+
+Var 
   Temp : String;
   idx,i : Longint;
 Begin
-  idx:=0;
-  while (F.BufPos>0) do
-   begin
-     i:=F.BufPos;
-     if i>255 then
-      i:=255;
-     Move(F.BufPTR^[idx],Temp[1],i);
-     SetLength(Temp,i);
-     DoWrite(Temp);
-     dec(F.BufPos,i);
-     inc(idx,i);
-   end;
+  idx := 0;
+  While (F.BufPos>0) Do
+    Begin
+      i := F.BufPos;
+      If i>255 Then
+        i := 255;
+      Move(F.BufPTR^[idx],Temp[1],i);
+      SetLength(Temp,i);
+      DoWrite(Temp);
+      dec(F.BufPos,i);
+      inc(idx,i);
+    End;
 
   DoWriteEnd;
-  xgraphWrite:=0;
+  xgraphWrite := 0;
 End;
 
 
@@ -189,52 +266,53 @@ Function xgraphRead(Var F: TextRec): Integer;
 {
   Read from CRT associated file.
 }
-var
+
+Var 
   c : char;
   i : longint;
 Begin
-      F.BufPos := 0;
-      i := 0;
-      repeat
-        c := readkey;
-        case c of
+  F.BufPos := 0;
+  i := 0;
+  Repeat
+    c := readkey;
+    Case c Of 
           { ignore special keys }
-          #0:
-            c:= readkey;
+      #0:
+          c := readkey;
           { Backspace }
-          #8:
-            if i > 0 then
-              begin
-                write(#8#32#8);
-                dec(i);
-              end;
+      #8:
+          If i > 0 Then
+            Begin
+              write(#8#32#8);
+              dec(i);
+            End;
           { Unhandled extended key }
-          #27:;
+      #27:;
           { CR }
-          #13:
-            begin
-              F.BufPtr^[i] := #10;
-              write(#10);
-              inc(i);
-            end;
-          else
-            begin
-              write(c);
-              F.BufPtr^[i] := c;
-              inc(i);
-            end;
-        end;
-      until (c in [#10,#13]) or (i >= F.BufSize);
-      F.BufEnd := i;
-      xgraphRead := 0;
-      exit;
+      #13:
+           Begin
+             F.BufPtr^[i] := #10;
+             write(#10);
+             inc(i);
+           End;
+      Else
+        Begin
+          write(c);
+          F.BufPtr^[i] := c;
+          inc(i);
+        End;
+    End;
+  Until (c In [#10,#13]) Or (i >= F.BufSize);
+  F.BufEnd := i;
+  xgraphRead := 0;
+  exit;
 End;
 
 
-Function xgraphReturn(Var F:TextRec):Integer;
+Function xgraphReturn(Var F:TextRec): Integer;
 Begin
-  xgraphReturn:=0;
-end;
+  xgraphReturn := 0;
+End;
 
 
 
@@ -242,39 +320,40 @@ end;
 Function xgraphOpen(Var F: TextRec): Integer;
 Begin
   If F.Mode=fmOutput Then
-   begin
-     TextRec(F).InOutFunc:=@xgraphWrite;
-     TextRec(F).FlushFunc:=@xgraphWrite;
-   end;
+    Begin
+      TextRec(F).InOutFunc := @xgraphWrite;
+      TextRec(F).FlushFunc := @xgraphWrite;
+    End;
   If F.Mode=fmInput Then
-   begin
-     TextRec(F).InOutFunc:=@xgraphRead;
-     TextRec(F).FlushFunc:=@xgraphReturn;
-   end;
-  xgraphOpen:=0;
+    Begin
+      TextRec(F).InOutFunc := @xgraphRead;
+      TextRec(F).FlushFunc := @xgraphReturn;
+    End;
+  xgraphOpen := 0;
 End;
 
 
 
-procedure init_x; cdecl; external;
+Procedure init_x;
+cdecl;
+external;
 
 
 Initialization
 
-  Assign(Output,'');
-  TextRec(Output).OpenFunc:=@xgraphOpen;
-  Rewrite(Output);
-  TextRec(Output).Handle:=StdOutputHandle;
-  Assign(Input,'');
-  TextRec(Input).OpenFunc:=@xgraphOpen;
-  Reset(Input);
-  TextRec(Input).Handle:=StdInputHandle;
+Assign(Output,'');
+TextRec(Output).OpenFunc := @xgraphOpen;
+Rewrite(Output);
+TextRec(Output).Handle := StdOutputHandle;
+Assign(Input,'');
+TextRec(Input).OpenFunc := @xgraphOpen;
+Reset(Input);
+TextRec(Input).Handle := StdInputHandle;
 
-  init_x();
+init_x();
 {
   ScreenHeight:=500;
   ScreenWidth:=1000;
 }
 
-end.
-
+End.

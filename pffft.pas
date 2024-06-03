@@ -6,6 +6,7 @@
 
 Unit pffft;
 
+
 (*******************************************************************
 
 	Unit PFFFT;
@@ -27,10 +28,11 @@ Unit pffft;
 
 Interface
 
-Uses
-  xgraph,	{Custom replacement unit for TUBO's "Crt" and "Graph" units}
-  pfun1,	{Use other puff unit}
-  pfun3;
+Uses 
+xgraph, {Custom replacement unit for TUBO's "Crt" and "Graph" units}
+pfun1, {Use other puff unit}
+pfun3;
+
 
 (* Local code:
    Procedure Fill_Data_4_FFT(ij,istart,ifinish : integer; nf : double);
@@ -43,14 +45,15 @@ Procedure Time_Response;
 
 Implementation
 
-Type
- farray  = array[1..514,1..max_params] of double; {2*256+2 nft max= 256}
+Type 
+  farray  = array[1..514,1..max_params] Of double; {2*256+2 nft max= 256}
 
-Var
+Var 
   Data  : farray;   {data array for FFT}
 
 
 Procedure Fill_Data_4_FFT(ij,istart,ifinish : integer; nf : double);
+
 {*
 	Fill array data for FFT and apply weighting.
 	Global variable filled is `Data' of type farray
@@ -77,45 +80,52 @@ Procedure Fill_Data_4_FFT(ij,istart,ifinish : integer; nf : double);
 	size of Data is half of that anticipated.
 *}
 
-var
+Var 
   wf   : double;
   i    : integer;
   cplt : plot_param;
 
-begin
-  for i:= 1 to (nft+1) do
-    if betweeni(istart,i-1,ifinish) then begin
-	if (i-1)=istart then cplt:=plot_start[ij] 
-               		else cplt:=cplt^.next_p;
-	if step_fn then	begin  {Apply weighting for step function}
-	    if not(odd(i)) then begin  
-	    	{1/i weighting, band limited by raised cosine}
-		wf:=nf*(1.0+cos(pi*(i-1)/(ifinish+1)))/(i-1);
-		{wf is supposed to be -imaginary, so swap x and y}
-		data[2*i-1,ij] := wf*cplt^.y;
-		data[2*i,ij]   :=-wf*cplt^.x;
-	    end 
-	    else begin {force function to be odd in (i-1)}
-		data[2*i-1,ij] :=0;
-		data[2*i,ij]   :=0;
-	    end;  
-	end 
-	else begin
-	    {Apply raised cosine band limiting for the impulse response}
-	    wf:=nf*(1.0+cos(pi*(i-1)/(ifinish+1)));
-	    data[2*i-1,ij] :=wf*cplt^.x;
-	    data[2*i,ij]   :=wf*cplt^.y;
-	end; {else if step_fn}
-    end 
-    else begin   {fill with zeros outside of frequency range}
-	data[2*i-1,ij] :=0;
-	data[2*i,ij]   :=0;
-    end; {else if between}
-    data[2,ij]:=data[2*nft+1,ij];
-end; {* Fill_Data_4_FFT *}
+Begin
+  For i:= 1 To (nft+1) Do
+    If betweeni(istart,i-1,ifinish) Then
+      Begin
+        If (i-1)=istart Then cplt := plot_start[ij]
+        Else cplt := cplt^.next_p;
+        If step_fn Then
+          Begin  {Apply weighting for step function}
+            If Not(odd(i)) Then
+              Begin
+      {1/i weighting, band limited by raised cosine}
+                wf := nf*(1.0+cos(pi*(i-1)/(ifinish+1)))/(i-1);
+  {wf is supposed to be -imaginary, so swap x and y}
+                data[2*i-1,ij] := wf*cplt^.y;
+                data[2*i,ij]   := -wf*cplt^.x;
+              End
+            Else
+              Begin {force function to be odd in (i-1)}
+                data[2*i-1,ij] := 0;
+                data[2*i,ij]   := 0;
+              End;
+          End
+        Else
+          Begin
+     {Apply raised cosine band limiting for the impulse response}
+            wf := nf*(1.0+cos(pi*(i-1)/(ifinish+1)));
+            data[2*i-1,ij] := wf*cplt^.x;
+            data[2*i,ij]   := wf*cplt^.y;
+          End; {else if step_fn}
+      End
+    Else
+      Begin   {fill with zeros outside of frequency range}
+        data[2*i-1,ij] := 0;
+        data[2*i,ij]   := 0;
+      End; {else if between}
+  data[2,ij] := data[2*nft+1,ij];
+End; {* Fill_Data_4_FFT *}
 
 
 Procedure Four1(ij,nn,isign : integer);
+
 {*
 	FFT as per Press et. al. Numerical Recipes p 394, p 754.
 	Uses global array Data[1..514,1..4].
@@ -129,61 +139,68 @@ Procedure Four1(ij,nn,isign : integer);
 {label
   one,two;}
 
-var
-    ii,jj,n,i,m,j,mmax,istep 	: integer;
-    wr,wi,wpr,wpi,wtemp,theta 	: double;
-    tempr,tempi 		: double;
+Var 
+  ii,jj,n,i,m,j,mmax,istep  : integer;
+  wr,wi,wpr,wpi,wtemp,theta  : double;
+  tempr,tempi   : double;
 
-begin
-  n:=2*nn;
-  j:=1;
-  for ii:=1 to nn do begin
-     i:=2*ii-1;
-     if (j > i) then begin
-	Tempr:=Data[j,ij];
-	Tempi:=Data[j+1,ij];
-	Data[j,ij]:=Data[i,ij];
-	Data[j+1,ij]:=Data[i+1,ij];
-	Data[i,ij]:=Tempr;
-	Data[i+1,ij]:=Tempi;
-     end;
-     m:= n div 2;
-     while (m >=2) and (j > m) do begin
-	j:=j-m;
-	m:=m div 2;
-     end;
-     j:=j+m;
-  end; {for ii}
-  mmax:=2;
-  while (n > mmax) do begin
-    istep:=2*mmax;
-    theta:=2*pi/(isign*mmax);
-    wpr:=-2.0*sqr(sin(theta/2.0));
-    wpi:=sin(theta);
-    wr:=1.0;
-    wi:=0.0;
-    for ii:=1 to (mmax div 2) do begin
-       m:=2*ii-1;
-       for jj:=0 to ((n-m) div istep) do begin
-          i:=m+jj*istep;
-          j:=i+mmax;
-	  tempr:=wr*data[j,ij]-wi*data[j+1,ij];
-	  tempi:=wr*data[j+1,ij]+wi*data[j,ij];
-	  data[j,ij]:=data[i,ij]-tempr;
-	  data[j+1,ij]:=data[i+1,ij]-tempi;
-	  data[i,ij]:=data[i,ij]+tempr;
-	  data[i+1,ij]:=data[i+1,ij]+tempi;
-       end; {for jj}	
-       wtemp:=wr; 
-       wr:=wr*wpr-wi*wpi+wr;
-       wi:=wi*wpr+wtemp*wpi+wi;
-   end; {for ii}
-   mmax:=istep;
-  end; {while n>}
-end; {* Four1 *}
+Begin
+  n := 2*nn;
+  j := 1;
+  For ii:=1 To nn Do
+    Begin
+      i := 2*ii-1;
+      If (j > i) Then
+        Begin
+          Tempr := Data[j,ij];
+          Tempi := Data[j+1,ij];
+          Data[j,ij] := Data[i,ij];
+          Data[j+1,ij] := Data[i+1,ij];
+          Data[i,ij] := Tempr;
+          Data[i+1,ij] := Tempi;
+        End;
+      m := n Div 2;
+      While (m >=2) And (j > m) Do
+        Begin
+          j := j-m;
+          m := m Div 2;
+        End;
+      j := j+m;
+    End; {for ii}
+  mmax := 2;
+  While (n > mmax) Do
+    Begin
+      istep := 2*mmax;
+      theta := 2*pi/(isign*mmax);
+      wpr := -2.0*sqr(sin(theta/2.0));
+      wpi := sin(theta);
+      wr := 1.0;
+      wi := 0.0;
+      For ii:=1 To (mmax Div 2) Do
+        Begin
+          m := 2*ii-1;
+          For jj:=0 To ((n-m) Div istep) Do
+            Begin
+              i := m+jj*istep;
+              j := i+mmax;
+              tempr := wr*data[j,ij]-wi*data[j+1,ij];
+              tempi := wr*data[j+1,ij]+wi*data[j,ij];
+              data[j,ij] := data[i,ij]-tempr;
+              data[j+1,ij] := data[i+1,ij]-tempi;
+              data[i,ij] := data[i,ij]+tempr;
+              data[i+1,ij] := data[i+1,ij]+tempi;
+            End; {for jj}
+          wtemp := wr;
+          wr := wr*wpr-wi*wpi+wr;
+          wi := wi*wpr+wtemp*wpi+wi;
+        End; {for ii}
+      mmax := istep;
+    End; {while n>}
+End; {* Four1 *}
 
 
 Procedure Real_FFT(ij,n,isign : integer);
+
 {*
 	Perform real FFT as per Press et. al. Numerical Recipes p 400.
 	(a.k.a. "realft")
@@ -196,121 +213,133 @@ Procedure Real_FFT(ij,n,isign : integer);
 	
 	Although not used here, if isign=+1 then FFT done.
 *}
-var
-  i,i1,i2,i3,i4 		: integer;
-  c1,c2,h1r,h1i,h2i,h2r		: double;
-  wr,wi,wpr,wpi,wtemp,theta 	: double;
 
-begin
-  theta:=2*pi/(2.0*n);
-  wr:=1.0;
-  wi:=0.0;
-  c1:=0.5;
-  if (isign=1) then begin
-   	c2:=-0.5;
-	theta:=-theta;
-	Four1(ij,n,1);
-	data[2*n+1,ij]:=data[1,ij];
-	data[2*n+2,ij]:=data[2,ij];
-  end 
-  else begin
-	c2:= 0.5;
-	data[2*n+1,ij]:=data[2,ij];
-	data[2*n+2,ij]:=0.0;
-	data[2,ij]:=0.0;
-  end;
-  wpr:=-2.0*sqr(sin(theta/2.0));
-  wpi:=sin(theta);
-  for i:=1 to (n div 2)+1 do begin
-	i1:=2*i-1;
-	i2:=i1+1;
-	i3:=2*n+3-i2;
-	i4:=i3+1;
-	h1r:= c1*(data[i1,ij]+data[i3,ij]);
-	h1i:= c1*(data[i2,ij]-data[i4,ij]);
-	h2r:=-c2*(data[i2,ij]+data[i4,ij]);
-	h2i:= c2*(data[i1,ij]-data[i3,ij]);
-	data[i1,ij]:= h1r+wr*h2r-wi*h2i;
-	data[i2,ij]:= h1i+wr*h2i+wi*h2r;
-	data[i3,ij]:= h1r-wr*h2r+wi*h2i;
-	data[i4,ij]:=-h1i+wr*h2i+wi*h2r;
-	wtemp:=wr;
-	wr:=wr*wpr - wi*wpi + wr;
-	wi:=wi*wpr+wtemp*wpi+wi;
-  end; {for i}
-  if (isign=1) then data[2,ij]:=data[2*n+1,ij] 
-	       else Four1(ij,n,1);
-end; {* Real_FFT *}
+Var 
+  i,i1,i2,i3,i4   : integer;
+  c1,c2,h1r,h1i,h2i,h2r  : double;
+  wr,wi,wpr,wpi,wtemp,theta  : double;
+
+Begin
+  theta := 2*pi/(2.0*n);
+  wr := 1.0;
+  wi := 0.0;
+  c1 := 0.5;
+  If (isign=1) Then
+    Begin
+      c2 := -0.5;
+      theta := -theta;
+      Four1(ij,n,1);
+      data[2*n+1,ij] := data[1,ij];
+      data[2*n+2,ij] := data[2,ij];
+    End
+  Else
+    Begin
+      c2 := 0.5;
+      data[2*n+1,ij] := data[2,ij];
+      data[2*n+2,ij] := 0.0;
+      data[2,ij] := 0.0;
+    End;
+  wpr := -2.0*sqr(sin(theta/2.0));
+  wpi := sin(theta);
+  For i:=1 To (n Div 2)+1 Do
+    Begin
+      i1 := 2*i-1;
+      i2 := i1+1;
+      i3 := 2*n+3-i2;
+      i4 := i3+1;
+      h1r := c1*(data[i1,ij]+data[i3,ij]);
+      h1i := c1*(data[i2,ij]-data[i4,ij]);
+      h2r := -c2*(data[i2,ij]+data[i4,ij]);
+      h2i := c2*(data[i1,ij]-data[i3,ij]);
+      data[i1,ij] := h1r+wr*h2r-wi*h2i;
+      data[i2,ij] := h1i+wr*h2i+wi*h2r;
+      data[i3,ij] := h1r-wr*h2r+wi*h2i;
+      data[i4,ij] := -h1i+wr*h2i+wi*h2r;
+      wtemp := wr;
+      wr := wr*wpr - wi*wpi + wr;
+      wi := wi*wpr+wtemp*wpi+wi;
+    End; {for i}
+  If (isign=1) Then data[2,ij] := data[2*n+1,ij]
+  Else Four1(ij,n,1);
+End; {* Real_FFT *}
 
 
 Procedure Time_Response;
 {*
 	Main procedure for FFT to get time response.
 *}
-var
-  nf,delt,time,hir_temp	: double;
-  istart,ifinish,
-  x1,y1,i,ij,col 	: integer;
 
-begin
-  hir_temp:=1.0;
+Var 
+  nf,delt,time,hir_temp : double;
+  istart,ifinish,
+  x1,y1,i,ij,col  : integer;
+
+Begin
+  hir_temp := 1.0;
   Erase_Message;
-  istart:=Round(fmin/finc);
-  ifinish:=istart+npts;
-  if ifinish > nft then begin
-    message[2]:='fmax/df too large';
-    Write_Message;
-    exit;
-  end;
-  nf:=0;
-  for i:= 1 to (nft+1) do
-   if betweeni(istart,i-1,ifinish) then
-    if step_fn then begin
-     if not(odd(i)) then begin
-      if odd(i div 2) then nf:=nf+(1.0+cos(pi*(i-1)/(ifinish+1)))/(i-1)
-                      else nf:=nf-(1.0+cos(pi*(i-1)/(ifinish+1)))/(i-1);
-     end;
-  end 
-  else begin
-      if (i-1) > 0 then nf:=nf+(1.0+cos(pi*(i-1)/(ifinish+1)))
-                   else nf:=nf+1.0;
-  end;
-  nf:=1.0/nf;
-  marker_OK:=false;
-  delt:=1.0/(2.0*nft*finc);
-  sxmin:= -q_fac/(8*design_freq);  
-  sxmax:=3*q_fac/(8*design_freq);
-  symax:= rho_fac;                 
-  symin:=-rho_fac;
+  istart := Round(fmin/finc);
+  ifinish := istart+npts;
+  If ifinish > nft Then
+    Begin
+      message[2] := 'fmax/df too large';
+      Write_Message;
+      exit;
+    End;
+  nf := 0;
+  For i:= 1 To (nft+1) Do
+    If betweeni(istart,i-1,ifinish) Then
+      If step_fn Then
+        Begin
+          If Not(odd(i)) Then
+            Begin
+              If odd(i Div 2) Then nf := nf+(1.0+cos(pi*(i-1)/(ifinish+1)))/(i-1)
+              Else nf := nf-(1.0+cos(pi*(i-1)/(ifinish+1)))/(i-1);
+            End;
+        End
+    Else
+      Begin
+        If (i-1) > 0 Then nf := nf+(1.0+cos(pi*(i-1)/(ifinish+1)))
+        Else nf := nf+1.0;
+      End;
+  nf := 1.0/nf;
+  marker_OK := false;
+  delt := 1.0/(2.0*nft*finc);
+  sxmin := -q_fac/(8*design_freq);
+  sxmax := 3*q_fac/(8*design_freq);
+  symax := rho_fac;
+  symin := -rho_fac;
   Draw_Graph(xmin[8],ymin[8],xmax[8],ymax[8],true);
-  sfx1:=(xmax[8]-xmin[8])/(sxmax-sxmin);
-  sfy1:=(ymax[8]-ymin[8])/(symax-symin);
-  for ij:=1 to max_params do
-   if s_param_table[ij]^.calc then begin
-    col:=s_color[ij];
-    Fill_Data_4_FFT(ij,istart,ifinish,nf); {fill Data[1..514,1..4]}
-    Real_FFT(ij,nft,-1); {convert complex data to real time function}
-    for i:= 1 to 2*nft do begin
-      time:=(i-1)*delt;
-      if time > sxmax then time := time-2*nft*delt;
-      x1:=xmin[8]+Round((time-sxmin)*sfx1);
-      if betweenr(symin,data[i,ij],symax,1/sfy1) then begin
-        y1:=ymax[8]-Round((data[i,ij]-symin)*sfy1);
-        if betweeni(xmin[8],x1,xmax[8]) then 
-		PutPixel(x1,Round(hir_temp*y1),col);
-      end;
-    end; {i}
-  end; {ij}
-  message[1]:='Type any key';
-  message[2]:='to return to the'; 
-  message[3]:='frequency domain';
+  sfx1 := (xmax[8]-xmin[8])/(sxmax-sxmin);
+  sfy1 := (ymax[8]-ymin[8])/(symax-symin);
+  For ij:=1 To max_params Do
+    If s_param_table[ij]^.calc Then
+      Begin
+        col := s_color[ij];
+        Fill_Data_4_FFT(ij,istart,ifinish,nf); {fill Data[1..514,1..4]}
+        Real_FFT(ij,nft,-1); {convert complex data to real time function}
+        For i:= 1 To 2*nft Do
+          Begin
+            time := (i-1)*delt;
+            If time > sxmax Then time := time-2*nft*delt;
+            x1 := xmin[8]+Round((time-sxmin)*sfx1);
+            If betweenr(symin,data[i,ij],symax,1/sfy1) Then
+              Begin
+                y1 := ymax[8]-Round((data[i,ij]-symin)*sfy1);
+                If betweeni(xmin[8],x1,xmax[8]) Then
+                  PutPixel(x1,Round(hir_temp*y1),col);
+              End;
+          End; {i}
+      End; {ij}
+  message[1] := 'Type any key';
+  message[2] := 'to return to the';
+  message[3] := 'frequency domain';
   Write_Message;
   chs := ReadKey;
-  if keypressed then chs := ReadKey;
+  If keypressed Then chs := ReadKey;
   Erase_Message;
   Draw_Graph(xmin[8],ymin[8],xmax[8],ymax[8],false);
-end; {* Time_Response *}
+End; {* Time_Response *}
 
 
-End. 
+End.
 {Unit implementation}

@@ -989,7 +989,7 @@ Begin
           If (j > 0) And Not(Manhat_on) Then
             Begin
               Get_Param(tcompt,3,value,value_str,unit1,prefix,alt_param);
- {value_str and prefix not used here}
+              {value_str and prefix not used here}
               If alt_param Then bad_compt := true;
               If bad_compt Then exit;
               Case unit1 Of  { Add or subtract line for artwork }

@@ -1,6 +1,9 @@
 use std::f64::consts::PI;
 
-use num::{complex::{Complex64, ComplexFloat}, traits::ConstZero};
+use num::{
+    complex::{Complex64, ComplexFloat},
+    traits::ConstZero,
+};
 
 struct TLineProps {
     zed: f64,
@@ -30,7 +33,6 @@ struct SimProps {
     z0: f64,
     /// TODO: global const?
     mu0: f64,
-
 }
 
 fn recip_finite(x: Complex64) -> Complex64 {
@@ -41,30 +43,36 @@ fn recip_finite(x: Complex64) -> Complex64 {
     }
 }
 
-fn tline_sim(freq: f64, line: TLineProps, sim: SimProps) {
+fn tline_sim(freq: f64, line: TLineProps, sim: SimProps) -> [Complex64; 4] {
     // Normalized frequency
     let gamma = freq / sim.design_freq;
     if line.dispersive {
         todo!("Dispersive tlines");
     }
-    let beta_l = line.e_len*gamma;
-    let alpha_tl = (line.alpha_d * gamma 
-        + rough_alpha(line.alpha_c, freq, &sim)*gamma.sqrt())*line.p_len;
+    let beta_l = line.e_len * gamma;
+    let alpha_tl =
+        (line.alpha_d * gamma + rough_alpha(line.alpha_c, freq, &sim) * gamma.sqrt()) * line.p_len;
     let exp = Complex64::new(alpha_tl, beta_l);
     // I'm 90% sure this is correct. TODO check by hand again.
     let sh = exp.sinh();
     let ch = exp.cosh();
     let zd = line.zed / sim.z0;
     // s11, s12, s21, s22
-    let s_params = [Complex64::ZERO; 4];
-    let rds = recip_finite(2.0*zd*ch + (1.0+zd.powi(2))*sh);
-    s_params[]
+    let mut s_params = [Complex64::ZERO; 4];
+    let rds = recip_finite(2.0 * zd * ch + (1.0 + zd.powi(2)) * sh);
+    s_params[0] = (zd.powi(2) - 1.0) * sh * rds;
+    s_params[3] = s_params[0]; // s22 = s11
+    s_params[1] = 2.0 * zd * rds;
+    s_params[2] = s_params[1]; // s21 = s12
+
+    // The pascal program included a long bit that seemed to turn the s-params into a linked list. I think I won't.
+    s_params
 }
 
 fn rough_alpha(alpha: f64, freq: f64, sim: &SimProps) -> f64 {
     if freq > 0.0 && sim.surface_roughness > 0.0 {
-        let skin_depth = 1e6/(PI*freq*sim.mu0*sim.conductivity).sqrt();
-        let angle_arg = 1.4*(sim.surface_roughness/skin_depth).powi(2);
+        let skin_depth = 1e6 / (PI * freq * sim.mu0 * sim.conductivity).sqrt();
+        let angle_arg = 1.4 * (sim.surface_roughness / skin_depth).powi(2);
         alpha * (1.0 + 2.0 * angle_arg.atan() / PI)
     } else {
         alpha

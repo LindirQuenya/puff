@@ -132,7 +132,7 @@ Const
   Pi     :  double = 3.141592653;  {* Use only 10 digits of Pi to *}
   infty  :  double = 1.0e+37;      {* ensure numerical stability  *}
   nft = 256;       {* Number of FFT points *}
-  c_in_mm: double = 3.0e+11;             {* Speed of light in mm/s *}
+  c_in_mm: double = 2.99792458e+11;             {* Speed of light in mm/s *}
   Mu_0: double    = 1.25664e-6;  {* Permeability of free space H/m *}
 
 (***** Temp Circuit Board constants ***************)

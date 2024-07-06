@@ -5,3 +5,7 @@
 ppas.sh
 ppasx.sh
 puff
+*.swp
+GPATH
+GRTAGS
+GTAGS

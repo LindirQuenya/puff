@@ -1,0 +1,19 @@
+{
+	"files.exclude": {
+		"enerdhil/test/data/**/*": true,
+		"enerdhil/**/target": true,
+		"enerdhil/**/Cargo.lock": true,
+		"pufsave/**/*": true,
+		"**/*.s": true,
+		"**/*.o": true,
+		"**/*.ppu": true,
+		"**/*.res": true,
+		"**/ppas.sh": true,
+		"**/ppasx.sh": true,
+		"**/puff": true,
+		"**/*.swp": true,
+		"**/GPATH": true,
+		"**/GRTAGS": true,
+		"**/GTAGS": true
+	}
+}

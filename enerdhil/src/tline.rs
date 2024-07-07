@@ -4,6 +4,7 @@ use thiserror::Error;
 use num::complex::{Complex64, ComplexFloat};
 
 use crate::util::cohn_k;
+use crate::sim::*;
 
 pub struct TLineProps {
     zed: f64,
@@ -48,41 +49,6 @@ impl TwoPort for TLineProps {
     }
 }
 
-pub trait TwoPort {
-    fn simulate(&self, freq: f64, sim: &SimProps) -> [Complex64; 4];
-}
-
-pub enum SimType {
-    Microstrip,
-    Stripline,
-}
-
-pub struct SimProps {
-    mode: SimType,
-    /// Hertz
-    design_freq: f64,
-    /// Micrometers
-    surface_roughness: f64,
-    /// mhos/meter
-    conductivity: f64,
-    /// Maybe generalize to complex? Maybe later.
-    z0: f64,
-    /// TODO: global const for free-space parameters?
-    mu0: f64,
-    eps0: f64,
-    /// Relative permittivity of board dielectric.
-    epsilon_r: f64,
-    /// Dielectric height, mm
-    height: f64,
-}
-
-impl SimProps {
-    /// Gives the free-space wavelength in mm.
-    fn lambda_fd_mm(&self) -> f64 {
-        let a = ((self.mu0 * self.eps0).sqrt() * self.design_freq).recip() * 1000.0;
-        a
-    }
-}
 
 /// TODO check if this is really necessary.
 fn recip_finite(x: Complex64) -> Complex64 {

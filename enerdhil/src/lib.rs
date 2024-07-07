@@ -1,4 +1,5 @@
 pub mod tline;
+pub mod sim;
 pub(crate) mod util;
 
 pub fn add(left: usize, right: usize) -> usize {

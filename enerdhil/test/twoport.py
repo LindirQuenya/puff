@@ -24,7 +24,7 @@ def main():
         print("Please provide exactly one argument, the json file to plot.")
         exit(0)
 
-    s11, s12, s21, s22 = loadJson(argv[1])
+    s11, s12, s21, s22 = loadJson(sys.argv[1])
 
     plt.plot(dB(s11), label=r"$|s_{11}|$")
     plt.plot(dB(s12), label=r"$|s_{12}|$")

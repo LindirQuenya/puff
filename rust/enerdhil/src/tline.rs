@@ -12,7 +12,7 @@ pub struct TLineProps {
     e_len: f64,
     /// Redundant with e_len, todo remove.
     wavelengths: f64,
-    dim: TlineDimensions,
+    dim: TLineDimensions,
     super_line: bool,
     alpha_d: f64,
     alpha_c: f64,
@@ -22,7 +22,7 @@ pub struct TLineProps {
     e_eff_e0: f64,
 }
 
-pub struct TlineDimensions {
+pub struct TLineDimensions {
     /// In mm
     pub p_len: f64,
     /// In mm
@@ -51,7 +51,7 @@ impl TLineProps {
             zed,
             e_len: 2.0 * PI * wavelengths,
             wavelengths,
-            dim: TlineDimensions {
+            dim: TLineDimensions {
                 p_len: len_mm,
                 p_width: width,
             },
@@ -64,6 +64,9 @@ impl TLineProps {
             e_eff_e0: 0.0,
         };
         if adv {
+            if width / sim.height < 0.0001 {
+                return Err(TLineError::SuperTooThin);
+            }
             match sim.mode {
                 SimType::Stripline => line.super_stripline(sim),
                 SimType::Microstrip => line.super_microstrip(sim),
@@ -237,7 +240,7 @@ impl TLineProps {
         }
     }
 
-    pub fn get_dimensions(&self) -> &TlineDimensions {
+    pub fn get_dimensions(&self) -> &TLineDimensions {
         &self.dim
     }
 }
@@ -354,6 +357,8 @@ fn width_tline(zed: f64, sim: &SimProps) -> Result<f64, TLineError> {
 pub enum TLineError {
     #[error("line impedance too high for numerical stability")]
     ImpedanceTooHigh,
+    #[error("line is too thin for complex (super) model")]
+    SuperTooThin,
 }
 
 #[cfg(test)]

@@ -231,6 +231,17 @@ impl TwoPort for TLineProps {
     }
 }
 
+impl Parseable for TLineProps {
+    fn parse(spec: &String) -> Self {
+        // ^t[a-z]*(!?)\s?([+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s?([fpnumkMGT])?([oszy])\s?([+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s?([num])?([mdh])\s?(?:([+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s?([num])?([mdh]))?$
+        // breaking that down:
+        // t[a-z]*   - must start with t, ignore following letters.
+        // (!?)   - may be complex (super), and whitespace may precede the impedance.
+        // ([+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))) - decimal
+        // 
+    }
+}
+
 /// TODO check if this is really necessary.
 fn recip_finite(x: Complex64) -> Complex64 {
     if x.abs() != 0.0 {

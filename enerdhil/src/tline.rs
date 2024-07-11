@@ -12,9 +12,7 @@ pub struct TLineProps {
     e_len: f64,
     /// Redundant with e_len, todo remove.
     wavelengths: f64,
-    /// In mm
-    p_len: f64,
-    p_width: f64,
+    dim: TlineDimensions,
     super_line: bool,
     alpha_d: f64,
     alpha_c: f64,
@@ -24,8 +22,15 @@ pub struct TLineProps {
     e_eff_e0: f64,
 }
 
+pub struct TlineDimensions {
+    /// In mm
+    pub p_len: f64,
+    /// In mm
+    pub p_width: f64,
+}
+
 impl TLineProps {
-    pub fn from_mm(zed: f64, len_mm: f64, adv: bool, sim: &SimProps) -> Result<Self, TLineError> {
+    pub fn new(zed: f64, len: LengthSpec, adv: bool, sim: &SimProps) -> Result<Self, TLineError> {
         let width = width_tline(zed, sim)?;
         let ere = match sim.mode {
             SimType::Microstrip => {
@@ -34,14 +39,22 @@ impl TLineProps {
             }
             SimType::Stripline => sim.epsilon_r,
         };
-        let fs_wlen = sim.lambda_fd_mm();
-        let wavelengths = len_mm * ere.sqrt() / fs_wlen;
+        let (len_mm, wavelengths) = match len {
+            LengthSpec::Degrees(deg) => (sim.lambda_fd_mm() * deg / 360. / ere.sqrt(), deg / 360.),
+            LengthSpec::Millimeters(mm) => (mm, mm * ere.sqrt() / sim.lambda_fd_mm()),
+            LengthSpec::SubstrateHeights(h) => (
+                h * sim.height,
+                h * sim.height * ere.sqrt() / sim.lambda_fd_mm(),
+            ),
+        };
         let mut line = TLineProps {
             zed,
             e_len: 2.0 * PI * wavelengths,
             wavelengths,
-            p_len: len_mm,
-            p_width: width,
+            dim: TlineDimensions {
+                p_len: len_mm,
+                p_width: width,
+            },
             super_line: false,
             alpha_d: 0.0,
             alpha_c: 0.0,
@@ -79,7 +92,7 @@ impl TLineProps {
         fn e_e(u: f64, b: f64, er: f64) -> f64 {
             (er + 1.0) / 2. + ((er - 1.0) / 2.) * (1.0 + 10. / u).powf(-a(u) * b)
         }
-        let u_in = self.p_width / sim.height;
+        let u_in = self.dim.p_width / sim.height;
         let b = 0.564 * ((sim.epsilon_r - 0.9) / (sim.epsilon_r + 3.0)).powf(0.053);
         let t_n = sim.metal_thickness / sim.height;
         let (mut delta_ul, mut delta_ur) = (0.0, 0.0);
@@ -106,13 +119,13 @@ impl TLineProps {
         .ln_1p();
         let z0_t = 60. * a_fac / sim.epsilon_r.sqrt();
 
-        self.alpha_c = ms_alpha_c(self.p_width, z0, e_eff, sim);
+        self.alpha_c = ms_alpha_c(self.dim.p_width, z0, e_eff, sim);
         self.alpha_d = ms_alpha_d(e_eff, sim);
         self.zed = z0;
         self.zed_e0 = z0;
         self.zed_s_e0 = z0_t;
         self.e_eff_e0 = e_eff;
-        self.wavelengths = self.p_len * e_eff.sqrt() / sim.lambda_fd_mm();
+        self.wavelengths = self.dim.p_len * e_eff.sqrt() / sim.lambda_fd_mm();
         self.e_len = 2. * PI * self.wavelengths;
         self.super_line = true;
     }
@@ -128,7 +141,7 @@ impl TLineProps {
           tcompt^.alpha_d */
     fn super_stripline(&mut self, sim: &SimProps) {
         if sim.metal_thickness > 0.0 {
-            let w = self.p_width;
+            let w = self.dim.p_width;
             let b = sim.height;
             // Equation (3.41b)
             let x = sim.metal_thickness / b;
@@ -201,10 +214,10 @@ impl TLineProps {
             // Unstable, substitute asymptotic values
             (
                 self.zed_s_e0,
-                2. * PI * self.p_len * sim.epsilon_r.sqrt() / sim.lambda_fd_mm(),
+                2. * PI * self.dim.p_len * sim.epsilon_r.sqrt() / sim.lambda_fd_mm(),
             )
         } else if f4 > 0.0 {
-            let u_in = self.p_width / sim.height;
+            let u_in = self.dim.p_width / sim.height;
             let p1 = 0.27488 + (0.6315 + 0.525 / (1.0 + 0.157 * f4).powi(20)) * u_in
                 - 0.065683 * (-8.7513 * u_in).exp();
             let p2 = 0.33622 * (1.0 - (-0.03442 * sim.epsilon_r).exp());
@@ -214,14 +227,18 @@ impl TLineProps {
             let ere_f = disperse_f(sim.epsilon_r, self.e_eff_e0, p);
             (
                 disperse_f(self.zed_s_e0, self.zed_e0, p),
-                2. * PI * self.p_len * ere_f.sqrt() / sim.lambda_fd_mm(),
+                2. * PI * self.dim.p_len * ere_f.sqrt() / sim.lambda_fd_mm(),
             )
         } else {
             (
                 self.zed_e0,
-                2. * PI * self.p_len * self.e_eff_e0.sqrt() / sim.lambda_fd_mm(),
+                2. * PI * self.dim.p_len * self.e_eff_e0.sqrt() / sim.lambda_fd_mm(),
             )
         }
+    }
+
+    pub fn get_dimensions(&self) -> &TlineDimensions {
+        &self.dim
     }
 }
 
@@ -231,14 +248,13 @@ impl TwoPort for TLineProps {
     }
 }
 
-impl Parseable for TLineProps {
-    fn parse(spec: &String) -> Self {
-        // ^t[a-z]*(!?)\s?([+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s?([fpnumkMGT])?([oszy])\s?([+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s?([num])?([mdh])\s?(?:([+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s?([num])?([mdh]))?$
-        // breaking that down:
-        // t[a-z]*   - must start with t, ignore following letters.
-        // (!?)   - may be complex (super), and whitespace may precede the impedance.
-        // ([+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))) - decimal
-        // 
+impl LengthCorrectable for TLineProps {
+    fn to_mm(&self, len: &LengthSpec, sim: &SimProps) -> f64 {
+        match len {
+            LengthSpec::Millimeters(mm) => *mm,
+            LengthSpec::SubstrateHeights(h) => h * sim.height,
+            LengthSpec::Degrees(deg) => self.dim.p_len * deg / (180. * self.e_len / PI),
+        }
     }
 }
 
@@ -256,8 +272,8 @@ fn tline_sim(freq: f64, line: &TLineProps, sim: &SimProps) -> [Complex64; 4] {
     let gamma = freq / sim.design_freq;
     let (zed, e_len) = line.zed_elen(freq, sim);
     let beta_l = e_len * gamma;
-    let alpha_tl =
-        (line.alpha_d * gamma + rough_alpha(line.alpha_c, freq, sim) * gamma.sqrt()) * line.p_len;
+    let alpha_tl = (line.alpha_d * gamma + rough_alpha(line.alpha_c, freq, sim) * gamma.sqrt())
+        * line.dim.p_len;
     let exp = Complex64::new(alpha_tl, beta_l);
     // I'm 90% sure this is correct. TODO check by hand again.
     let sh = exp.sinh();
@@ -367,12 +383,13 @@ mod tests {
             loss_tangent: 0.02,
             metal_thickness: 0.035,
         };
-        let line =
-            TLineProps::from_mm(25.0, 12.0, false, &sim).expect("Hard-coded tline should work.");
+        let line = TLineProps::new(25.0, LengthSpec::Millimeters(12.0), false, &sim)
+            .expect("Hard-coded tline should work.");
         for i in 0..n {
             sparams.push(line.simulate(i as f64 * step, &sim));
         }
-        let file = File::create("test/data/25ohm.json").expect("Failed to open test data file.");
+        let file =
+            File::create("test/data/tline/25ohm.json").expect("Failed to open test data file.");
         serde_json::to_writer_pretty(file, &sparams).expect("Unable to serialize s-parameters.");
     }
     #[test]
@@ -395,12 +412,13 @@ mod tests {
             loss_tangent: 0.02,
             metal_thickness: 0.035,
         };
-        let line =
-            TLineProps::from_mm(25.0, 12.0, true, &sim).expect("Hard-coded tline should work.");
+        let line = TLineProps::new(25.0, LengthSpec::Millimeters(12.0), true, &sim)
+            .expect("Hard-coded tline should work.");
         for i in 0..n {
             sparams.push(line.simulate(i as f64 * step, &sim));
         }
-        let file = File::create("test/data/s25ohm.json").expect("Failed to open test data file.");
+        let file =
+            File::create("test/data/tline/s25ohm.json").expect("Failed to open test data file.");
         serde_json::to_writer_pretty(file, &sparams).expect("Unable to serialize s-parameters.");
     }
 }

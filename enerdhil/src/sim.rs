@@ -15,6 +15,17 @@ pub enum SimType {
     Stripline,
 }
 
+pub trait LengthCorrectable {
+    fn to_mm(&self, len: &LengthSpec, sim: &SimProps) -> f64;
+}
+
+pub enum LengthSpec {
+    // TODO: maybe change to radians?
+    Degrees(f64),
+    Millimeters(f64),
+    SubstrateHeights(f64),
+}
+
 pub struct SimProps {
     pub mode: SimType,
     /// Hertz

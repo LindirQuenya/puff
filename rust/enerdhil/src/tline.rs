@@ -133,7 +133,7 @@ impl TLineProps {
         self.super_line = true;
     }
 
-    /**	Re-analyze stripline parameters using W/h
+    /** Re-analyze stripline parameters using W/h
     from static calculation, adding in the effects
     of finite strip thickness. Re-calculates Z0.
     Computes stripline alpha due to conductor loss.

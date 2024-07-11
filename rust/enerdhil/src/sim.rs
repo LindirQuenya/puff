@@ -6,10 +6,6 @@ pub trait TwoPort {
     fn simulate(&self, freq: f64, sim: &SimProps) -> [Complex64; 4];
 }
 
-pub trait Parseable {
-    fn parse(spec: &String) -> Self;
-}
-
 pub enum SimType {
     Microstrip,
     Stripline,

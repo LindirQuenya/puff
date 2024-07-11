@@ -1,9 +1,6 @@
 use thiserror::Error;
 
-use crate::{
-    tline::{TLineDimensions, TLineProps},
-    Component,
-};
+use crate::{tline::TLineProps, Component};
 
 pub struct Constraints {
     /// Manufacturing resolution, in mm.

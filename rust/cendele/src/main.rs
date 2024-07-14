@@ -7,7 +7,7 @@ mod config;
 
 fn main() {
     // Init logger
-    dioxus_logger::init(Level::INFO).expect("failed to init logger");
+    dioxus_logger::init(Level::DEBUG).expect("failed to init logger");
 
     dioxus::launch(App);
 }
@@ -18,6 +18,7 @@ fn App() -> Element {
 
     rsx! {
         link { rel: "stylesheet", href: "main.css" }
+        script { src: "ui.js" }
         div { id: "mainrow", class: "row",
             div { id: "textcol", class: "column",
                 div { id: "plotconfig", class: "textelem row",
@@ -39,13 +40,7 @@ fn App() -> Element {
                     }
                 }
                 config::ConfigWindow {
-                    zd: "10",
-                    fd: "10",
-                    er: "10.2",
-                    h: "1.27",
-                    s: "12",
-                    microstrip: true,
-                    manhattan: false,
+                    
                 }
             }
             div { id: "graphcol", class: "column",

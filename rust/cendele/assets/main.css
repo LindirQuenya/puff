@@ -20,7 +20,9 @@ input {
     font-size: 8px;
     background-color: #111216;
     color: white;
-    border-style: hidden;
+    border-width: 1px;
+    border-style:solid;
+    border-color: #111216;
     /* to remove the on-select border as well*/
     outline: none;
 }
@@ -117,4 +119,11 @@ div {
 .configtable {
     border-collapse: collapse;
     border-spacing: 0;
+}
+
+.scaryinput {
+    text-align: right;
+    border-color: red;
+    border-style: solid;
+    border-width: 1px;
 }

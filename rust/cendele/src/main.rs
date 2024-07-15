@@ -18,7 +18,7 @@ fn App() -> Element {
 
     rsx! {
         link { rel: "stylesheet", href: "main.css" }
-        script { src: "ui.js" }
+        script { id: "jslib", src: "ui.js" }
         div { id: "mainrow", class: "row",
             div { id: "textcol", class: "column",
                 div { id: "plotconfig", class: "textelem row",
@@ -33,15 +33,15 @@ fn App() -> Element {
                             for i in 'a'..='r' {
                                 tr {
                                     th { "{i}" }
-                                    th { input {id: "part{i}"}}
+                                    th {
+                                        input { id: "part{i}" }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-                config::ConfigWindow {
-                    
-                }
+                config::ConfigWindow {}
             }
             div { id: "graphcol", class: "column",
                 div { id: "layoutsmithrow", class: "row",
@@ -57,5 +57,6 @@ fn App() -> Element {
                 }
             }
         }
+
     }
 }

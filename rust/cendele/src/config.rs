@@ -1,10 +1,10 @@
-use std::{borrow::Borrow, thread::Scope};
+use std::{borrow::Borrow, fmt::Display, thread::Scope};
 
 use dioxus::prelude::*;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-static POS_FLOAT: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(\+?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))([fpnumkMGTP]?)$").unwrap());
+static POS_FLOAT: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(\+?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*([fpnumkMGTP]?)$").unwrap());
 
 #[derive(PartialEq, Clone, Props)]
 pub struct ConfigProps {
@@ -16,10 +16,41 @@ pub struct ConfigProps {
 	er: String,
 	/// Dielectric height
 	h: String,
-	/// Port spacing
+	/// Board size
 	s: String,
-	microstrip: bool,
-	manhattan: bool,
+	/// Port spacing
+	c: String,
+	mode: RenderMode,
+}
+
+#[derive(Clone,Copy,PartialEq)]
+pub enum RenderMode {
+	Microstrip,
+	Stripline,
+	MSManhattan,
+	SLManhattan,
+}
+
+impl RenderMode {
+	fn rotate(&self) -> Self {
+		match *self {
+			Self::Microstrip => Self::Stripline,
+			Self::Stripline => Self::MSManhattan,
+			Self::MSManhattan => Self::SLManhattan,
+			Self::SLManhattan => Self::Microstrip,
+		}
+	}
+}
+
+impl Display for RenderMode {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match *self {
+			Self::Microstrip => write!(f, "Microstrip"),
+			Self::Stripline => write!(f, "Stripline"),
+			Self::MSManhattan => write!(f, "MicrostripMH"),
+			Self::SLManhattan => write!(f, "StriplineMH"),
+		}
+	}
 }
 
 fn on_key_down(e: Event<KeyboardData>) {
@@ -29,15 +60,12 @@ fn on_key_down(e: Event<KeyboardData>) {
 		},
 		Key::ArrowUp => {
 
-		}
+		},
+		Key::Character(c)=> {
+			e
+		},
 		_ => {}
 	}
-}
-
-fn validate_pos_float_with_prefix(s: &str) -> bool {
-	
-	tracing::debug!(s);
-	RE.is_match(s)
 }
 
 /// Only works for ids that don't have " in them. Please make your ids nice.
@@ -47,30 +75,99 @@ fn finish_validation(id: &str, success: bool) {
 
 
 pub fn ConfigWindow() -> Element {
-	let mut props = use_signal(|| ConfigProps {zd: "10".to_string(),
-	fd: "10".to_string(),
-	er: "10.2".to_string(),
-	h: "1.27".to_string(),
-	s: "12".to_string(),
-	microstrip: true,
-	manhattan: false});
+    let mut props = use_signal(|| ConfigProps {zd: "50.000 ".to_string(),
+    fd: "3.000G".to_string(),
+    er: "10.200 ".to_string(),
+    h: "1.270m".to_string(),
+    s: "20.000m".to_string(),
+	c: "16.000m".to_string(),
+
+    mode: RenderMode::Microstrip});
 
 	rsx! {
-		div { id: "config", class: "textelem row",
-            table { onkeydown: on_key_down, 
+		div {id: "config", class: "textelem row",
+            table { onkeydown: move |e| {
+				match e.key() {
+					Key::Tab => {
+						props.write().mode = props().mode.rotate();
+					},
+					Key::Character(c) => {
+						
+					}
+					_ => {}
+				}
+			}, 
 				class: "configtable", tbody {
 				tr {
 					th { "zd" }
-					th { input {id: "zd", class: "configin", value: "{props().zd}" } }
+					th { input { id: "zd", class: "configin", value: "{props().zd}", oninput: move |e| {
+						props.write().zd = e.data().value();
+					},
+					onblur: move |_e| {
+						let valid = POS_FLOAT.is_match(&props().zd);
+						finish_validation("zd",valid);
+					}} }
 					td {class: "configunit", a { "Ω" } }
 				}
 				tr {
 					th { "fd" }
-					th { input {id: "fd", class: "configin", value: "{props().fd}", onblur: |e| {
-						tracing::debug!("{e:?}");
-						let validation = finish_validation("fd",false);
+					th { input {id: "fd", class: "configin", value: "{props().fd}", oninput: move |e| {
+						props.write().fd = e.data().value();
+					},
+					onblur: move |_e| {
+						let valid = POS_FLOAT.is_match(&props().fd);
+						finish_validation("fd",valid);
 					}} }
 					td {class: "configunit", a { "Hz" } }
+				}
+				tr {
+					th { "er" }
+					th { input {id: "er", class: "configin", value: "{props().er}", oninput: move |e| {
+						props.write().er = e.data().value();
+					},
+					onblur: move |_e| {
+						let valid = POS_FLOAT.is_match(&props().er);
+						finish_validation("er",valid);
+					}} }
+					td {class: "configunit", a { "" } }
+				}
+				tr {
+					th { "h" }
+					th { input {id: "h", class: "configin", value: "{props().h}", oninput: move |e| {
+						props.write().h = e.data().value();
+					},
+					onblur: move |_e| {
+						let valid = POS_FLOAT.is_match(&props().h);
+						finish_validation("h",valid);
+					}} }
+					td {class: "configunit", a { "m" } }
+				}
+				tr {
+					th { "s" }
+					th { input {id: "s", class: "configin", value: "{props().s}", oninput: move |e| {
+						props.write().s = e.data().value();
+					},
+					onblur: move |_e| {
+						let valid = POS_FLOAT.is_match(&props().s);
+						finish_validation("s",valid);
+					}} }
+					td {class: "configunit", a { "m" } }
+				}
+				tr {
+					th { "c" }
+					th { input {id: "c", class: "configin", value: "{props().c}", oninput: move |e| {
+						props.write().c = e.data().value();
+					},
+					onblur: move |_e| {
+						let valid = POS_FLOAT.is_match(&props().c);
+						finish_validation("c",valid);
+					}} }
+					td {class: "configunit", a { "m" } }
+				}
+				tr {
+					th { "Tab" }
+					th { input {id: "mode", class: "configin", readonly: true, value: "{props().mode}"} }
+					td {class: "configunit", a { "" } }
 				}
 			}}
         }

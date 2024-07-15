@@ -11,3 +11,9 @@ function finishValidation(id, passed) {
 		box.focus();
 	}
 }
+
+function preventDefault(ids, type) {
+	for (const id of ids) {
+		document.getElementById(id).addEventListener(type, (e) => e.preventDefault());
+	}
+}

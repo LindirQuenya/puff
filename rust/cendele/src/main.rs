@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+use config::ParsedConfigProps;
 use dioxus::prelude::*;
 use tracing::Level;
 
@@ -14,7 +15,15 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    // Build cool things ✌️
+    let context = use_context_provider(|| Signal::new(ParsedConfigProps {
+        zd: 50.,
+        fd: 3e9,
+        er: 10.2,
+        h: 1.27e-3,
+        s: 20e-3,
+        c: 16e-3,
+        mode: config::RenderMode::Microstrip,
+    }));
 
     rsx! {
         link { rel: "stylesheet", href: "main.css" }

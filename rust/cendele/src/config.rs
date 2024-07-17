@@ -1,11 +1,11 @@
 use std::{borrow::Borrow, fmt::Display, thread::Scope};
 
-use dioxus::prelude::*;
+use dioxus::{desktop::Config, prelude::*};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
 static POS_FLOAT: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^(\+?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*([fpnumkMGTP]?)$").unwrap());
+    Lazy::new(|| Regex::new(r"^(\+?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*([fpnumckMGTP]?)$").unwrap());
 
 #[derive(PartialEq, Clone, Props)]
 pub struct ConfigProps {
@@ -22,6 +22,60 @@ pub struct ConfigProps {
     /// Port spacing
     c: String,
     mode: RenderMode,
+}
+
+fn prefix_to_scale(s: &str) -> i32 {
+	match s {
+		"P" => 12,
+		"G" => 9,
+		"M" => 6,
+		"k" => 3,
+		"c" => -2,
+		"m" => -3,
+		"u" => -6,
+		"n" => -9,
+		"p" => -12,
+		"f" => -16,
+		_ => 0
+	}
+}
+
+fn parse_float(s: &str) -> Option<f64> {
+	let captures = POS_FLOAT.captures(s)?;
+	let floatbase: f64 = captures.get(1)?.as_str().parse().expect("Regex should only match on valid floats.");
+	let scale = prefix_to_scale(captures.get(2)?.as_str());
+	Some(floatbase * 10f64.powi(scale))
+}
+
+pub struct ParsedConfigProps {
+	/// Port impedance
+    pub zd: f64,
+    /// Design frequency
+    pub fd: f64,
+    /// Dielectric relative permittivity
+    pub er: f64,
+    /// Dielectric height
+    pub h: f64,
+    /// Board size
+    pub s: f64,
+    /// Port spacing
+    pub c: f64,
+    pub mode: RenderMode,
+}
+
+impl ConfigProps {
+	fn parse(&self) -> Option<ParsedConfigProps> {
+		Some(ParsedConfigProps {
+			zd: parse_float(&self.zd)?,
+		fd: parse_float(&self.fd)?,
+		er: parse_float(&self.er)?,
+		h: parse_float(&self.h)?,
+		s: parse_float(&self.s)?,
+		c: parse_float(&self.c)?,
+		mode: self.mode,
+		})
+		
+	}
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -74,6 +128,7 @@ pub fn ConfigWindow() -> Element {
     rsx! {
 		div { id: "config", class: "textelem row", onblur: |e| {
 			tracing::debug!("{e:?}");
+
 		},
 			table {
 				onkeydown: move |e| {

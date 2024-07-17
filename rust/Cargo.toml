@@ -3,5 +3,5 @@ resolver = "2"
 
 members = [
     "enerdhil",
-    "cendele",
+    "accarcendele/src-tauri",
 ]

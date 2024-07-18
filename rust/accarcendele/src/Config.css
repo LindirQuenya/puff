@@ -1,0 +1,12 @@
+.configin {
+    text-align: right;
+}
+
+.configunit {
+    font-weight: bold;
+    align-items: start;
+}
+
+#config {
+    height:min-content;
+}

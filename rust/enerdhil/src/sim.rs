@@ -7,8 +7,8 @@ pub trait TwoPort {
 }
 
 pub enum SimType {
-    Microstrip,
-    Stripline,
+    Microstrip = 0,
+    Stripline = 1,
 }
 
 pub trait LengthCorrectable {

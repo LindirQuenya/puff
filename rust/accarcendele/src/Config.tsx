@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Dictionary, ParsedConfig, SimType, ValidatedInput } from './types';
 import './Config.css';
+import { prefix_to_scale } from './regex';
 
 const POSITIVE_FLOAT =
   /^\s*(\+?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*([fpnumckMGTP]?)\s*$/;
@@ -14,25 +15,6 @@ type ConfigStr = {
   s: ValidatedInput;
   c: ValidatedInput;
 };
-
-function prefix_to_scale(s: string): number {
-  const dict: Dictionary<number> = {
-    P: 12,
-    G: 9,
-    M: 6,
-    k: 3,
-    c: -2,
-    m: -3,
-    u: -6,
-    n: -9,
-    p: -12,
-    f: -15,
-  };
-  if (s in dict) {
-    return dict[s];
-  }
-  return 0;
-}
 
 function rotateMode(mode: SimType): SimType {
   switch (mode) {
@@ -66,11 +48,11 @@ function parseConfig(config: ConfigStr, mode: SimType): ParsedConfig | null {
   for (const key in config) {
     const matches =
       config[key as keyof ConfigStr].content.match(POSITIVE_FLOAT);
-    if (matches === null) {
+    if (!matches) {
       return null;
     }
-    const value = parseFloat(matches[0]);
-    const exponent = prefix_to_scale(matches[1]);
+    const value = parseFloat(matches[1]);
+    const exponent = prefix_to_scale(matches[2]);
     parsed[key as keyof ParsedConfig] = value * 10 ** exponent;
   }
   return parsed;
@@ -107,7 +89,7 @@ export function Config() {
         <th>{label}</th>
         <th>
           <input
-            id={key}
+            id={'config_'+key}
             className={inputclass}
             value={config.inputs[key].content}
             onInput={(e) =>
@@ -149,14 +131,14 @@ export function Config() {
           let ind = order.indexOf(document.activeElement?.id ?? '');
           if (ind != -1) {
             ind = (ind + 1) % order.length;
-            document.getElementById(order[ind])?.focus();
+            document.getElementById('config_'+order[ind])?.focus();
           }
         } else if (e.key === 'ArrowUp') {
           e.preventDefault();
           let ind = order.indexOf(document.activeElement?.id ?? '');
           if (ind != -1) {
             ind = (((ind - 1) % order.length) + order.length) % order.length;
-            document.getElementById(order[ind])?.focus();
+            document.getElementById('config_'+order[ind])?.focus();
           }
         }
       }}
@@ -181,7 +163,7 @@ export function Config() {
             <th>Tab</th>
             <th>
               <input
-                id="mode"
+                id="config_mode"
                 className="configin"
                 readOnly={true}
                 value={stringMode(config.mode)}

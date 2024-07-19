@@ -15,6 +15,16 @@ export type ParsedConfig = {
 	mode: SimType,
 }
 
+export type Impedance = {
+	value: number,
+	units: ImpedanceUnit,
+}
+
+export type Length = {
+	value: number,
+	units: LengthUnit,
+}
+
 export type ValidatedInput = {
 	content: string,
 	valid: boolean,
@@ -23,7 +33,9 @@ export type ValidatedInput = {
 export enum SimType {
 	Microstrip,
 	Stripline,
+	/** Microstrip, manhattan drawing. */
 	MicrostripMH,
+	/** Stripline, manhattan drawing. */
 	StriplineMH,
 }
 
@@ -31,15 +43,32 @@ export type Dictionary<T> = {
 	[Key: string]: T
 }
 
-export enum ImpedanceSpec {
+export enum ImpedanceUnit {
 	Ohms,
 	Siemens,
 	Z0,
 	Y0,
 }
 
-export enum LengthSpec {
+export enum LengthUnit {
 	Degrees,
-	Millimeters,
+	Meters,
 	SubstrateHeights,
 }
+
+export type TLine = {
+	impedance: Impedance,
+	length: Length,
+	correction: Length,
+}
+
+export type TLineDimensions = {
+	p_len: number,
+	p_width: number,
+}
+
+export type Transformer = {
+	ratio: number,
+}
+
+export type Part = {kind: "t", part: TLine} | {kind: "x", part: Transformer};

@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Dictionary, ParsedConfig, SimType, ValidatedInput } from './types';
-import './Config.css';
-import { prefix_to_scale } from './regex';
+import { useState } from "react";
+import { ParsedConfig, SimType, ValidatedInput } from "./types";
+import "./Config.css";
+import { prefix_to_scale } from "./regex";
 
 const POSITIVE_FLOAT =
   /^\s*(\+?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*([fpnumckMGTP]?)\s*$/;
@@ -32,19 +32,19 @@ function rotateMode(mode: SimType): SimType {
 function stringMode(mode: SimType): string {
   switch (mode) {
     case SimType.Microstrip:
-      return 'Microstrip';
+      return "Microstrip";
     case SimType.Stripline:
-      return 'Stripline';
+      return "Stripline";
     case SimType.MicrostripMH:
-      return 'MicrostripMH';
+      return "MicrostripMH";
     case SimType.StriplineMH:
-      return 'StriplineMH';
+      return "StriplineMH";
   }
 }
 
 function parseConfig(config: ConfigStr, mode: SimType): ParsedConfig | null {
   // DANGER: this relies on ParsedConfig and ConfigStr having the same key names.
-  let parsed = { mode } as ParsedConfig;
+  const parsed = { mode } as ParsedConfig;
   for (const key in config) {
     const matches =
       config[key as keyof ConfigStr].content.match(POSITIVE_FLOAT);
@@ -58,7 +58,8 @@ function parseConfig(config: ConfigStr, mode: SimType): ParsedConfig | null {
   return parsed;
 }
 
-var parsedConfig: ParsedConfig | null = null;
+// TODO: this is bad, should be globally-tracked state.
+let parsedConfig: ParsedConfig | null = null;
 
 export function getConfig(): ParsedConfig | null {
   return parsedConfig;
@@ -69,12 +70,12 @@ export function Config() {
     const temp = {
       mode: SimType.Microstrip,
       inputs: {
-        zd: { content: '50.000 ', valid: true },
-        fd: { content: '3.000G', valid: true },
-        er: { content: '10.200 ', valid: true },
-        h: { content: '1.270m', valid: true },
-        s: { content: '20.000m', valid: true },
-        c: { content: '16.000m', valid: true },
+        zd: { content: "50.000 ", valid: true },
+        fd: { content: "3.000G", valid: true },
+        er: { content: "10.200 ", valid: true },
+        h: { content: "1.270m", valid: true },
+        s: { content: "20.000m", valid: true },
+        c: { content: "16.000m", valid: true },
       } as ConfigStr,
     };
     parsedConfig = parseConfig(temp.inputs, temp.mode);
@@ -83,13 +84,13 @@ export function Config() {
 
   function configrow(key: keyof ConfigStr, label: string, unit: string) {
     const inputclass =
-      'configin' + (config.inputs[key].valid ? '' : ' invalid');
+      "configin" + (config.inputs[key].valid ? "" : " invalid");
     return (
       <tr>
         <th>{label}</th>
         <th>
           <input
-            id={'config_'+key}
+            id={"config_" + key}
             className={inputclass}
             value={config.inputs[key].content}
             onInput={(e) =>
@@ -113,32 +114,32 @@ export function Config() {
     );
   }
 
-  let order = ['zd', 'fd', 'er', 'h', 's', 'c'];
+  const order = ["zd", "fd", "er", "h", "s", "c"];
 
   return (
     <div
       id="config"
       className="textelem row"
       onKeyDownCapture={(e) => {
-        if (e.key === 'Tab') {
+        if (e.key === "Tab") {
           e.preventDefault();
           setConfig({
             ...config,
             mode: rotateMode(config.mode),
           });
-        } else if (e.key === 'ArrowDown') {
+        } else if (e.key === "ArrowDown") {
           e.preventDefault();
-          let ind = order.indexOf(document.activeElement?.id ?? '');
+          let ind = order.indexOf(document.activeElement?.id ?? "");
           if (ind != -1) {
             ind = (ind + 1) % order.length;
-            document.getElementById('config_'+order[ind])?.focus();
+            document.getElementById("config_" + order[ind])?.focus();
           }
-        } else if (e.key === 'ArrowUp') {
+        } else if (e.key === "ArrowUp") {
           e.preventDefault();
-          let ind = order.indexOf(document.activeElement?.id ?? '');
+          let ind = order.indexOf(document.activeElement?.id ?? "");
           if (ind != -1) {
             ind = (((ind - 1) % order.length) + order.length) % order.length;
-            document.getElementById('config_'+order[ind])?.focus();
+            document.getElementById("config_" + order[ind])?.focus();
           }
         }
       }}
@@ -153,12 +154,12 @@ export function Config() {
     >
       <table id="configtable">
         <tbody>
-          {configrow('zd', 'zd', 'Ω')}
-          {configrow('fd', 'fd', 'Hz')}
-          {configrow('er', 'er', '')}
-          {configrow('h', 'h', 'm')}
-          {configrow('s', 's', 'm')}
-          {configrow('c', 'c', 'm')}
+          {configrow("zd", "zd", "Ω")}
+          {configrow("fd", "fd", "Hz")}
+          {configrow("er", "er", "")}
+          {configrow("h", "h", "m")}
+          {configrow("s", "s", "m")}
+          {configrow("c", "c", "m")}
           <tr>
             <th>Tab</th>
             <th>
@@ -178,4 +179,3 @@ export function Config() {
     </div>
   );
 }
-

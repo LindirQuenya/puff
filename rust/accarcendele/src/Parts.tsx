@@ -1,25 +1,25 @@
-import { SyntheticEvent, useRef, useState } from 'react';
+import { SyntheticEvent, useState } from "react";
 import {
-  Dictionary,
   Part,
   PartDimension,
   PartDimensions,
   PartsStr,
   TLineDimensions,
   ValidatedPart,
-} from './types';
-import { invoke } from '@tauri-apps/api/core';
-import { parse_tline } from './tline';
+} from "./types";
+import { invoke } from "@tauri-apps/api/core";
+import { parse_tline } from "./tline";
 
 function validate_part(s: string): Part | null {
   if (s.length === 0) {
     return null;
   }
   switch (s[0]) {
-    case 't':
+    case "t": {
       const part = parse_tline(s);
       if (!part) return null;
-      return { kind: 't', part };
+      return { kind: "t", part };
+    }
   }
   return null;
 }
@@ -30,7 +30,7 @@ function get_index(e: SyntheticEvent): keyof PartsStr | null {
   // This cast is technically incorrect - it may not be an <input>.
   // But it makes the TS compiler shut up about me accessing .id (possibly undefined), so we're good.
   const target = e.target as HTMLInputElement;
-  const match = PARTID.exec(target.id ?? '');
+  const match = PARTID.exec(target.id ?? "");
   return match?.[1] as keyof PartsStr | null;
 }
 
@@ -42,26 +42,27 @@ export type PartsProps = {
 
 export function Parts(props: PartsProps) {
   const [parts, setPartstr] = useState(() => {
-    return Array.from('abcdefghijklmnopqr').reduce(
-      (o, c) => ({ ...o, [c]: { spec: '', parsed: null } }),
-      {}
+    return Array.from("abcdefghijklmnopqr").reduce(
+      (o, c) => ({ ...o, [c]: { spec: "", parsed: null } }),
+      {},
     ) as PartsStr;
   });
   async function getDim(c: keyof PartsStr): Promise<PartDimension | undefined> {
     let newdim: PartDimension | undefined = undefined;
-		// TODO handle errors from invoke.
+    // TODO handle errors from invoke.
     if (parts[c].parsed) {
-			switch (parts[c].parsed.kind) {
-				case 't':
-					const dim = (await invoke('add_transmission_line', {
-						index: c,
-						linedesc: parts[c].parsed.part,
-					})) as TLineDimensions;
-					newdim = { kind: 't', dim };
-					break;
-			}
+      switch (parts[c].parsed.kind) {
+        case "t": {
+          const dim = (await invoke("add_transmission_line", {
+            index: c,
+            linedesc: parts[c].parsed.part,
+          })) as TLineDimensions;
+          newdim = { kind: "t", dim };
+          break;
+        }
+      }
     }
-		return newdim;
+    return newdim;
   }
   return (
     <div
@@ -73,22 +74,22 @@ export function Parts(props: PartsProps) {
           return;
         }
         // TODO: convenient UI things (tab, up/down arrows)
-        if (e.key === '=') {
+        if (e.key === "=") {
           e.preventDefault();
-					const dim = await getDim(index);
+          const dim = await getDim(index);
           if (!dim) {
-            props.setMessage(['', 'Invalid part', '']);
+            props.setMessage(["", "Invalid part", ""]);
             return;
           }
           console.log(parts[index]);
-					console.log(dim);
+          console.log(dim);
           switch (dim.kind) {
-            case 't':
+            case "t":
               // TODO: make formatting better with non-milli prefixes.
               props.setMessage([
                 `l: ${dim.dim.p_len.toPrecision(5)}mm`,
                 `w: ${dim.dim.p_width.toPrecision(5)}mm`,
-                '',
+                "",
               ]);
               break;
           }
@@ -100,16 +101,17 @@ export function Parts(props: PartsProps) {
           {Object.keys(parts).map((ind) => {
             const c = ind as keyof PartsStr;
             const row = parts[c].spec;
-            let inputclass = '';
+            let inputclass = "";
             if (row.trim().length !== 0) {
               if (parts[c].parsed) {
+                // TODO: selection from F1.
                 if (false) {
-                  inputclass = 'selected';
+                  inputclass = "selected";
                 } else {
-                  inputclass = 'active';
+                  inputclass = "active";
                 }
               } else {
-                inputclass = 'invalid';
+                inputclass = "invalid";
               }
             }
             return (
@@ -117,7 +119,7 @@ export function Parts(props: PartsProps) {
                 <th>{c}</th>
                 <th>
                   <input
-                    id={'part_' + c}
+                    id={"part_" + c}
                     className={inputclass}
                     value={row}
                     onInput={(e) => {
@@ -130,13 +132,13 @@ export function Parts(props: PartsProps) {
                       });
                     }}
                     onBlur={async () => {
-											const dim = await getDim(c);
-											console.log(dim);
-											props.setDims({
-												...props.dims,
-												[c]: dim,
-											});
-										}}
+                      const dim = await getDim(c);
+                      console.log(dim);
+                      props.setDims({
+                        ...props.dims,
+                        [c]: dim,
+                      });
+                    }}
                   ></input>
                 </th>
               </tr>
@@ -147,4 +149,3 @@ export function Parts(props: PartsProps) {
     </div>
   );
 }
-

@@ -72,3 +72,35 @@ export type Transformer = {
 }
 
 export type Part = {kind: "t", part: TLine} | {kind: "x", part: Transformer};
+
+export type ValidatedPart = {
+	spec: string,
+	parsed: Part | null,
+}
+
+export type PartsStr = {
+	a: ValidatedPart,
+	b: ValidatedPart,
+	c: ValidatedPart,
+	d: ValidatedPart,
+	e: ValidatedPart,
+	f: ValidatedPart,
+	g: ValidatedPart,
+	h: ValidatedPart,
+	i: ValidatedPart,
+	j: ValidatedPart,
+	k: ValidatedPart,
+	l: ValidatedPart,
+	m: ValidatedPart,
+	n: ValidatedPart,
+	o: ValidatedPart,
+	p: ValidatedPart,
+	q: ValidatedPart,
+	r: ValidatedPart,
+}
+
+export type PartDimensions = {
+	[Property in keyof PartsStr]: PartDimension | undefined;
+}
+
+export type PartDimension = { kind: 't', dim: TLineDimensions };

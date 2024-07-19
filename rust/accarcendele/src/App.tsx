@@ -2,19 +2,21 @@ import { useState } from 'react';
 import { Config } from './Config';
 import { Parts } from './Parts';
 import './main.css';
-import { Message, MessageContext } from './Message';
+import { Message } from './Message';
+import { PartDimensions } from './types';
 
+// TODO: selected part for F1 screen.
+// TODO: react devtools
 export default function App() {
 	let [message, setMessage] = useState(['', '', '']);
+	let [dims, setDims] = useState({} as PartDimensions);
 	return (<div id="mainrow" className="row">
 		<div id="textcol" className="column">
 			<div id="plotconfig" className="textelem row">
 				<a>F2</a>
 			</div>
-			<MessageContext.Provider value={message}>
-				<Message/>
-			</MessageContext.Provider>
-			<Parts setMessage={setMessage}/>
+			<Message message={message}/>
+			<Parts setMessage={setMessage} dims={dims} setDims={setDims}/>
 			<Config />
 		</div>
 		<div id="graphcol" className="column">

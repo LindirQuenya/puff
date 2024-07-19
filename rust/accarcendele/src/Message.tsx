@@ -1,18 +1,16 @@
-import { createContext, useContext } from 'react';
+export type MessageProps = {
+	message: string[],
+}
 
-// TODO: array
-export const MessageContext = createContext(['', '', '']);
-
-export function Message() {
-  let message = useContext(MessageContext);
+export function Message(props: MessageProps) {
   return (
     <div id="message" className="textelem row">
       <p>
-				{message[0]}
+				{props.message[0]}
 				<br/>
-				{message[1]}
+				{props.message[1]}
 				<br/>
-				{message[2]}
+				{props.message[2]}
 				<br/>
 			</p>
     </div>

@@ -1,0 +1,18 @@
+Tasks still to be done:
+ - [ ] Multiple components, Mason's rule
+   - [ ] build netlist of components
+   - [ ] auto-insert implicit elements (T, open, short, etc.)
+   - [ ] convert to SFG in petgraph
+   - [ ] use [library](https://docs.rs/graph-cycles/latest/graph_cycles/) to find all 1st order loops
+   - [ ] for each s-param, naively calculate Mason's rule
+ - [ ] Components
+   - [ ] clines
+   - [ ] qlines
+   - [ ] xformer
+   - [ ] T junction
+   - [ ] device files
+   - [ ] lumped elements
+ - [ ] Export
+   - [ ] artwork
+   - [ ] s-params (touchstone)
+ - [ ] Touchstone parser (either fork existing or make own).

@@ -1,7 +1,10 @@
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{tline::TLineProps, Component};
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Constraints {
     /// Manufacturing resolution, in mm.
     pub circuit_resolution: f64,

@@ -1,3 +1,5 @@
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::f64::consts::{E, PI};
 use thiserror::Error;
 
@@ -22,6 +24,8 @@ pub struct TLineProps {
     e_eff_e0: f64,
 }
 
+#[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct TLineDimensions {
     /// In mm
     pub p_len: f64,

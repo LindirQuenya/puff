@@ -1,11 +1,14 @@
 use std::f64::consts::PI;
 
 use num::complex::Complex64;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 pub trait TwoPort {
     fn simulate(&self, freq: f64, sim: &SimProps) -> [Complex64; 4];
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum SimType {
     Microstrip = 0,
     Stripline = 1,
@@ -15,6 +18,7 @@ pub trait LengthCorrectable {
     fn to_mm(&self, len: &LengthSpec, sim: &SimProps) -> f64;
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum LengthSpec {
     // TODO: maybe change to radians?
     Degrees(f64),
@@ -22,6 +26,7 @@ pub enum LengthSpec {
     SubstrateHeights(f64),
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SimProps {
     pub mode: SimType,
     /// Hertz

@@ -2,13 +2,16 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{tline::TLineProps, Component};
+use crate::{
+    tline::{TLineDimensions, TLineProps},
+    Component, Dimensions,
+};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Constraints {
     /// Manufacturing resolution, in mm.
     pub circuit_resolution: f64,
-    /// Board dimensions, to check fit. Orientation is arbitrary.
+    /// Board dimensions, in mm. To check fit, orientation is arbitrary.
     pub board_dim: (f64, f64),
 }
 
@@ -20,14 +23,13 @@ pub enum ValidationError {
     AboveBoardDimensions,
 }
 
-pub fn validate(comp: &Component, constr: &Constraints) -> Result<(), ValidationError> {
+pub fn validate(comp: &Dimensions, constr: &Constraints) -> Result<(), ValidationError> {
     match comp {
-        Component::TLine(line) => validate_tline(line, constr),
+        Dimensions::TLine(dim) => validate_tline(dim, constr),
     }
 }
 
-fn validate_tline(line: &TLineProps, constr: &Constraints) -> Result<(), ValidationError> {
-    let dim = line.get_dimensions();
+fn validate_tline(dim: &TLineDimensions, constr: &Constraints) -> Result<(), ValidationError> {
     let min_dim = dim.p_len.min(dim.p_width);
     let max_dim = dim.p_len.max(dim.p_width);
     if min_dim < constr.circuit_resolution {

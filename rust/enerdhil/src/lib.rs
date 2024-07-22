@@ -1,4 +1,4 @@
-use tline::TLineProps;
+use tline::{TLineDimensions, TLineProps};
 
 pub mod constraint;
 pub mod sim;
@@ -11,6 +11,10 @@ pub fn add(left: usize, right: usize) -> usize {
 
 pub enum Component {
     TLine(TLineProps),
+}
+
+pub enum Dimensions {
+    TLine(TLineDimensions),
 }
 
 #[cfg(test)]

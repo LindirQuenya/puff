@@ -1,9 +1,8 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { ParsedConfig, SimType, ValidatedInput } from "./types";
 import "./Config.css";
 import { prefix_to_scale } from "./regex";
 import { invoke } from "@tauri-apps/api/core";
-import { publish } from "./events";
 
 const POSITIVE_FLOAT =
   /^\s*(\+?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*([fpnumckMGTP]?)\s*$/;
@@ -70,7 +69,10 @@ const defaultConfig = {
     c: { content: "16.000m", valid: true },
   } as ConfigStr,
 };
-export const defaultParsed = parseConfig(defaultConfig.inputs, defaultConfig.mode);
+export const defaultParsed = parseConfig(
+  defaultConfig.inputs,
+  defaultConfig.mode,
+);
 
 export function Config() {
   const [config, setConfig] = useState(() => defaultConfig);
@@ -144,8 +146,7 @@ export function Config() {
           const parsedConfig = parseConfig(config.inputs, config.mode);
           if (parsedConfig) {
             console.log(JSON.stringify(parsedConfig));
-            await invoke('update_config', {newconf: parsedConfig});
-            publish('refreshdims', {});
+            await invoke("update_config", { newconf: parsedConfig });
           }
         }
       }}

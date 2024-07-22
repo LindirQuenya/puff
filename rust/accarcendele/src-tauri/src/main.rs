@@ -9,11 +9,11 @@ use std::collections::HashMap;
 use enerdhil::{
     constraint::{validate, Constraints},
     sim::{LengthCorrectable, SimProps, SimType},
-    tline::{TLineDimensions, TLineProps},
+    tline::TLineProps,
     Component, Dimensions,
 };
 use parking_lot::{Mutex, RwLock};
-use tauri::{Manager, State};
+use tauri::{Emitter, Manager, State, Window};
 use tstypes::{ConfigUpdate, TLine, TLineDimensionsMeters};
 
 struct Config {
@@ -58,7 +58,7 @@ fn add_transmission_line(
 }
 
 #[tauri::command]
-fn update_config(newconf: ConfigUpdate, simstate: State<SimSettings>) {
+fn update_config(newconf: ConfigUpdate, simstate: State<SimSettings>, window: Window) {
     let mut conf = simstate.0.write();
     conf.sim.z0 = newconf.zd;
     conf.sim.design_freq = newconf.fd;
@@ -71,6 +71,7 @@ fn update_config(newconf: ConfigUpdate, simstate: State<SimSettings>) {
         tstypes::SimType::StriplineMH => (SimType::Stripline, true),
     };
     conf.constr.board_dim = (newconf.s * 1000., newconf.s * 1000.);
+    let _ = window.emit("config-update", ()).map_err(|e| eprintln!("{}", e.to_string()));
 }
 
 fn main() {

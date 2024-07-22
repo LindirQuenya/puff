@@ -9,9 +9,9 @@ import {
 } from "./types";
 import { invoke } from "@tauri-apps/api/core";
 import { parse_tline } from "./tline";
-import { subscribe, unsubscribe } from "./events";
+import { listen } from "@tauri-apps/api/event";
 
-const partNames = 'abcdefghijklmnopqr';
+const partNames = "abcdefghijklmnopqr";
 
 function validate_part(s: string): Part | null {
   if (s.length === 0) {
@@ -76,11 +76,14 @@ export function Parts(props: PartsProps) {
     });
   }
   useEffect(() => {
-    let refresh = async () => {
-      await Promise.all([...partNames].map((c) => refreshDim(c as keyof PartsStr)));
+    const unlisten = listen("config-update", async () => {
+      await Promise.all(
+        [...partNames].map((c) => refreshDim(c as keyof PartsStr)),
+      );
+    });
+    return () => {
+      unlisten.then((ul) => ul());
     };
-    subscribe('refreshdims', refresh);
-    return () => unsubscribe('refreshdims', refresh);
   }, [parts]);
   return (
     <div
@@ -105,8 +108,8 @@ export function Parts(props: PartsProps) {
             case "t":
               // TODO: make formatting better with non-milli prefixes.
               props.setMessage([
-                `l: ${(1000*dim.dim.p_len).toPrecision(5)}mm`,
-                `w: ${(1000*dim.dim.p_width).toPrecision(5)}mm`,
+                `l: ${(1000 * dim.dim.p_len).toPrecision(5)}mm`,
+                `w: ${(1000 * dim.dim.p_width).toPrecision(5)}mm`,
                 "",
               ]);
               break;

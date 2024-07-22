@@ -1,4 +1,4 @@
-import { SyntheticEvent, useState } from "react";
+import { SyntheticEvent, useEffect, useState } from "react";
 import {
   Part,
   PartDimension,
@@ -9,6 +9,9 @@ import {
 } from "./types";
 import { invoke } from "@tauri-apps/api/core";
 import { parse_tline } from "./tline";
+import { subscribe, unsubscribe } from "./events";
+
+const partNames = 'abcdefghijklmnopqr';
 
 function validate_part(s: string): Part | null {
   if (s.length === 0) {
@@ -42,7 +45,7 @@ export type PartsProps = {
 
 export function Parts(props: PartsProps) {
   const [parts, setPartstr] = useState(() => {
-    return Array.from("abcdefghijklmnopqr").reduce(
+    return Array.from(partNames).reduce(
       (o, c) => ({ ...o, [c]: { spec: "", parsed: null } }),
       {},
     ) as PartsStr;
@@ -64,6 +67,21 @@ export function Parts(props: PartsProps) {
     }
     return newdim;
   }
+  async function refreshDim(c: keyof PartsStr) {
+    const dim = await getDim(c);
+    console.log(dim);
+    props.setDims({
+      ...props.dims,
+      [c]: dim,
+    });
+  }
+  useEffect(() => {
+    let refresh = async () => {
+      await Promise.all([...partNames].map((c) => refreshDim(c as keyof PartsStr)));
+    };
+    subscribe('refreshdims', refresh);
+    return () => unsubscribe('refreshdims', refresh);
+  }, [parts]);
   return (
     <div
       id="parts"
@@ -87,8 +105,8 @@ export function Parts(props: PartsProps) {
             case "t":
               // TODO: make formatting better with non-milli prefixes.
               props.setMessage([
-                `l: ${dim.dim.p_len.toPrecision(5)}mm`,
-                `w: ${dim.dim.p_width.toPrecision(5)}mm`,
+                `l: ${(1000*dim.dim.p_len).toPrecision(5)}mm`,
+                `w: ${(1000*dim.dim.p_width).toPrecision(5)}mm`,
                 "",
               ]);
               break;
@@ -131,14 +149,7 @@ export function Parts(props: PartsProps) {
                         } as ValidatedPart,
                       });
                     }}
-                    onBlur={async () => {
-                      const dim = await getDim(c);
-                      console.log(dim);
-                      props.setDims({
-                        ...props.dims,
-                        [c]: dim,
-                      });
-                    }}
+                    onBlur={() => refreshDim(c)}
                   ></input>
                 </th>
               </tr>

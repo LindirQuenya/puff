@@ -1,14 +1,14 @@
-use enerdhil::sim::LengthSpec;
+use enerdhil::{sim::LengthSpec, tline::TLineDimensions};
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 #[derive(Serialize_repr, Deserialize_repr, Clone, Copy)]
 #[repr(u8)]
 pub enum ImpedanceUnit {
-    Ohms,
-    Siemens,
-    Z0,
-    Y0,
+    Ohms = 0,
+    Siemens = 1,
+    Z0 = 2,
+    Y0 = 3,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
@@ -20,9 +20,9 @@ pub struct Impedance {
 #[derive(Serialize_repr, Deserialize_repr, Clone, Copy)]
 #[repr(u8)]
 pub enum LengthUnit {
-    Degrees,
-    Meters,
-    SubstrateHeights,
+    Degrees = 0,
+    Meters = 1,
+    SubstrateHeights = 2,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
@@ -36,6 +36,38 @@ pub struct TLine {
     pub impedance: Impedance,
     pub length: Length,
     pub correction: Length,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub struct TLineDimensionsMeters {
+    pub p_len: f64,
+    pub p_width: f64,
+}
+
+#[derive(Serialize_repr, Deserialize_repr, Clone, Copy)]
+#[repr(u8)]
+pub enum SimType {
+    Microstrip = 0,
+    Stripline = 1,
+    MicrostripMH = 2,
+    StriplineMH = 3,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub struct ConfigUpdate {
+    /// Ohms
+    pub zd: f64,
+    /// Hz
+    pub fd: f64,
+    /// Unitless
+    pub er: f64,
+    /// Meters
+    pub h: f64,
+    /// Meters
+    pub s: f64,
+    /// Meters, TODO: unused
+    pub c: f64,
+    pub mode: SimType,
 }
 
 impl Into<LengthSpec> for Length {
@@ -55,6 +87,15 @@ impl Impedance {
             ImpedanceUnit::Siemens => self.value.recip(),
             ImpedanceUnit::Z0 => self.value * z0,
             ImpedanceUnit::Y0 => self.value.recip() * z0,
+        }
+    }
+}
+
+impl Into<TLineDimensionsMeters> for TLineDimensions {
+    fn into(self) -> TLineDimensionsMeters {
+        TLineDimensionsMeters {
+            p_len: self.p_len / 1000.,
+            p_width: self.p_width / 1000.,
         }
     }
 }

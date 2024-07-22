@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ParsedConfig, SimType, ValidatedInput } from "./types";
 import "./Config.css";
 import { prefix_to_scale } from "./regex";
+import { invoke } from "@tauri-apps/api/core";
+import { publish } from "./events";
 
 const POSITIVE_FLOAT =
   /^\s*(\+?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*([fpnumckMGTP]?)\s*$/;
@@ -57,30 +59,21 @@ function parseConfig(config: ConfigStr, mode: SimType): ParsedConfig | null {
   }
   return parsed;
 }
-
-// TODO: this is bad, should be globally-tracked state.
-let parsedConfig: ParsedConfig | null = null;
-
-export function getConfig(): ParsedConfig | null {
-  return parsedConfig;
-}
+const defaultConfig = {
+  mode: SimType.Microstrip,
+  inputs: {
+    zd: { content: "50.000 ", valid: true },
+    fd: { content: "3.000G", valid: true },
+    er: { content: "10.200 ", valid: true },
+    h: { content: "1.270m", valid: true },
+    s: { content: "20.000m", valid: true },
+    c: { content: "16.000m", valid: true },
+  } as ConfigStr,
+};
+export const defaultParsed = parseConfig(defaultConfig.inputs, defaultConfig.mode);
 
 export function Config() {
-  const [config, setConfig] = useState(() => {
-    const temp = {
-      mode: SimType.Microstrip,
-      inputs: {
-        zd: { content: "50.000 ", valid: true },
-        fd: { content: "3.000G", valid: true },
-        er: { content: "10.200 ", valid: true },
-        h: { content: "1.270m", valid: true },
-        s: { content: "20.000m", valid: true },
-        c: { content: "16.000m", valid: true },
-      } as ConfigStr,
-    };
-    parsedConfig = parseConfig(temp.inputs, temp.mode);
-    return temp;
-  });
+  const [config, setConfig] = useState(() => defaultConfig);
 
   function configrow(key: keyof ConfigStr, label: string, unit: string) {
     const inputclass =
@@ -143,12 +136,17 @@ export function Config() {
           }
         }
       }}
-      onBlur={(e) => {
+      onBlur={async (e) => {
         if (
           e.relatedTarget != e.currentTarget &&
           !e.currentTarget.contains(e.relatedTarget)
         ) {
-          parsedConfig = parseConfig(config.inputs, config.mode);
+          const parsedConfig = parseConfig(config.inputs, config.mode);
+          if (parsedConfig) {
+            console.log(JSON.stringify(parsedConfig));
+            await invoke('update_config', {newconf: parsedConfig});
+            publish('refreshdims', {});
+          }
         }
       }}
     >

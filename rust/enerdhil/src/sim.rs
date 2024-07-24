@@ -5,7 +5,11 @@ use num::complex::Complex64;
 use serde::{Deserialize, Serialize};
 
 pub trait TwoPort {
-    fn simulate(&self, freq: f64, sim: &SimProps) -> [Complex64; 4];
+    fn simulate(&self, freq: f64, sim: &SimProps) -> [[Complex64; 2]; 2];
+}
+
+pub trait ThreePort {
+    fn simulate(&self, freq: f64, sim: &SimProps) -> [[Complex64; 3]; 3];
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

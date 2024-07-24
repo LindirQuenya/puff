@@ -12,11 +12,11 @@ def loadJson(fname):
     with open(fname, "r") as f:
         data = np.array(json.load(f))
     # [Re, Im] to complex conversion
-    s = data[:,:,0] + 1j*data[:,:,1]
-    s11 = s[:,0]
-    s12 = s[:,1]
-    s21 = s[:,2]
-    s22 = s[:,3]
+    s = data[:,:,:,0] + 1j*data[:,:,:,1]
+    s11 = s[:,0,0]
+    s12 = s[:,0,1]
+    s21 = s[:,1,0]
+    s22 = s[:,1,1]
     return s11, s12, s21, s22
 
 def main():

@@ -1,16 +1,13 @@
-use tline::{TLineDimensions, TLineProps};
+use parts::tline::TLineDimensions;
 
 pub mod constraint;
 pub mod sim;
-pub mod tline;
+pub mod parts;
+pub mod sfg;
 pub(crate) mod util;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
-}
-
-pub enum Component {
-    TLine(TLineProps),
 }
 
 pub enum Dimensions {

@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    tline::{TLineDimensions, TLineProps},
-    Component, Dimensions,
+    parts::tline::TLineDimensions,
+    Dimensions,
 };
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

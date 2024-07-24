@@ -250,7 +250,7 @@ impl TLineProps {
 }
 
 impl TwoPort for TLineProps {
-    fn simulate(&self, freq: f64, sim: &SimProps) -> [Complex64; 4] {
+    fn simulate(&self, freq: f64, sim: &SimProps) -> [[Complex64; 2];2] {
         tline_sim(freq, self, sim)
     }
 }
@@ -274,7 +274,7 @@ fn recip_finite(x: Complex64) -> Complex64 {
     }
 }
 
-fn tline_sim(freq: f64, line: &TLineProps, sim: &SimProps) -> [Complex64; 4] {
+fn tline_sim(freq: f64, line: &TLineProps, sim: &SimProps) -> [[Complex64; 2]; 2] {
     // Normalized frequency
     let gamma = freq / sim.design_freq;
     let (zed, e_len) = line.zed_elen(freq, sim);
@@ -286,13 +286,13 @@ fn tline_sim(freq: f64, line: &TLineProps, sim: &SimProps) -> [Complex64; 4] {
     let sh = exp.sinh();
     let ch = exp.cosh();
     let zd = zed / sim.z0;
-    // s11, s12, s21, s22
-    let mut s_params = [Complex64::ZERO; 4];
+    // [[s11, s12], [s21, s22]]
+    let mut s_params = [[Complex64::ZERO; 2]; 2];
     let rds = recip_finite(2.0 * zd * ch + (1.0 + zd.powi(2)) * sh);
-    s_params[0] = (zd.powi(2) - 1.0) * sh * rds;
-    s_params[3] = s_params[0]; // s22 = s11
-    s_params[1] = 2.0 * zd * rds;
-    s_params[2] = s_params[1]; // s21 = s12
+    s_params[0][0] = (zd.powi(2) - 1.0) * sh * rds;
+    s_params[1][1] = s_params[0][0]; // s22 = s11
+    s_params[0][1] = 2.0 * zd * rds;
+    s_params[1][0] = s_params[0][1]; // s21 = s12
 
     // The pascal program included a long bit that seemed to turn the s-params into a linked list. I think I won't.
     s_params
@@ -378,7 +378,7 @@ mod tests {
         let max = 10.0E9;
         let n = 201;
         let step = (max - min) / (n - 1) as f64;
-        let mut sparams: Vec<[Complex64; 4]> = Vec::new();
+        let mut sparams: Vec<[[Complex64; 2]; 2]> = Vec::new();
         let sim = SimProps {
             mode: SimType::Microstrip,
             design_freq: 3e9,
@@ -407,7 +407,7 @@ mod tests {
         let max = 10.0E9;
         let n = 201;
         let step = (max - min) / (n - 1) as f64;
-        let mut sparams: Vec<[Complex64; 4]> = Vec::new();
+        let mut sparams: Vec<[[Complex64; 2]; 2]> = Vec::new();
         let sim = SimProps {
             mode: SimType::Microstrip,
             design_freq: 3e9,

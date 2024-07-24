@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use enerdhil::{
     constraint::{validate, Constraints},
     sim::{LengthCorrectable, SimProps, SimType},
-    tline::TLineProps,
-    Component, Dimensions,
+    parts::tline::TLineProps,
+    parts::Component, Dimensions,
 };
 use parking_lot::{Mutex, RwLock};
 use tauri::{Emitter, Manager, State, Window};

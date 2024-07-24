@@ -4,6 +4,8 @@ import { Parts } from "./Parts";
 import "./main.css";
 import { Message } from "./Message";
 import { PartDimensions } from "./types";
+import { Layout } from "./Layout";
+import { Plot } from "./Plot";
 
 // TODO: selected part for F1 screen.
 // TODO: react devtools
@@ -22,16 +24,12 @@ export default function App() {
       </div>
       <div id="graphcol" className="column">
         <div id="layoutsmithrow" className="row">
-          <div id="layout">
-            <a>layout</a>
-          </div>
+          <Layout/>
           <div id="smith">
             <a>smith</a>
           </div>
         </div>
-        <div id="plot">
-          <a>plot</a>
-        </div>
+        <Plot/>
       </div>
     </div>
   );

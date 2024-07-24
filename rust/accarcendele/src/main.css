@@ -61,10 +61,12 @@ div + div {
   width: 100%;
 }
 #graphcol {
-  flex-basis: 70%;
+  flex-grow: 9;
 }
 #textcol {
-  flex-basis: 30%;
+  flex-basis: 90px;
+  flex-grow: 1;
+  flex-shrink: 0;
 }
 #layout {
   flex-basis: 50%;
@@ -74,6 +76,7 @@ div + div {
 }
 #layoutsmithrow {
   width: 100%;
+  flex-basis: 50%;
 }
 #plot {
   width: 100%;
@@ -101,3 +104,4 @@ p {
   width: 100%;
   margin: 5px;
 }
+

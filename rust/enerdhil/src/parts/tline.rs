@@ -8,6 +8,7 @@ use num::complex::{Complex64, ComplexFloat};
 use crate::sim::*;
 use crate::util::{cohn_k, disperse_f, hammerstad_z, ms_alpha_c, ms_alpha_d};
 
+#[derive(Clone)]
 pub struct TLineProps {
     zed: f64,
     /// In radians
@@ -84,12 +85,12 @@ impl TLineProps {
     Uses Hammerstad and Jensen (1980 MTT-S) models
     for Z0 and e_eff (see Itoh's IEEE book).
 
-    Affects:  tcompt^.zed,  (new value from W/h)
-        tcompt^.e_eff_e0   (e_eff value at f=0)
-        tcompt^.alpha_c,  (value at fd)
-        tcompt^.alpha_d   (value at fd)
-        tcompt^.zed_e0,   (new f=0 value from W/h)
-        tcompt^.wavelength  (new value from lngth0)
+    Affects:  self.zed,  (new value from W/h)
+        self.e_eff_e0   (e_eff value at f=0)
+        self.alpha_c,  (value at fd)
+        self.alpha_d   (value at fd)
+        self.zed_e0,   (new f=0 value from W/h)
+        self.wavelength  (new value from lngth0)
     */
     fn super_microstrip(&mut self, sim: &SimProps) {
         fn a(u: f64) -> f64 {
@@ -143,9 +144,9 @@ impl TLineProps {
     Computes stripline alpha due to conductor loss.
     See Gupta, Garg, and Chadha pp 59-60.
 
-    Affects:  tcompt^.zed,
-          tcompt^.alpha_c,
-          tcompt^.alpha_d */
+    Affects:  self.zed,
+          self.alpha_c,
+          self.alpha_d */
     fn super_stripline(&mut self, sim: &SimProps) {
         if sim.metal_thickness > 0.0 {
             let w = self.dim.p_width;
@@ -196,9 +197,9 @@ impl TLineProps {
     as a function of frequency for microstrip.
 
     Input values from super_microstrip are:
-        tcompt^.zed_e0   := advanced model for zed at f=0
-        tcompt^.e_eff_e0 := new ere at f=0
-        tcompt^.lngth0   := lngth in mm
+        self.zed_e0   := advanced model for zed at f=0
+        self.e_eff_e0 := new ere at f=0
+        self.lngth0   := lngth in mm
 
     Requires W/h from static calculation, epsilon(0)
     from supermicrostrip calculation, and
@@ -250,7 +251,7 @@ impl TLineProps {
 }
 
 impl TwoPort for TLineProps {
-    fn simulate(&self, freq: f64, sim: &SimProps) -> [[Complex64; 2];2] {
+    fn simulate(&self, freq: f64, sim: &SimProps) -> [[Complex64; 2]; 2] {
         tline_sim(freq, self, sim)
     }
 }

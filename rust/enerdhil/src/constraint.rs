@@ -2,10 +2,7 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{
-    parts::tline::TLineDimensions,
-    Dimensions,
-};
+use crate::{parts::tline::TLineDimensions, Dimensions};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Constraints {

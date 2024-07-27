@@ -1,9 +1,9 @@
 use parts::tline::TLineDimensions;
 
 pub mod constraint;
-pub mod sim;
 pub mod parts;
 pub mod sfg;
+pub mod sim;
 pub(crate) mod util;
 
 pub fn add(left: usize, right: usize) -> usize {

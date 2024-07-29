@@ -1,6 +1,7 @@
 use parts::tline::TLineDimensions;
 
 pub mod constraint;
+pub mod netlist;
 pub mod parts;
 pub mod sfg;
 pub mod sim;

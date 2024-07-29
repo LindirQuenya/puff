@@ -250,7 +250,7 @@ impl TLineProps {
     }
 }
 
-impl TwoPort for TLineProps {
+impl NPort<2> for TLineProps {
     fn simulate(&self, freq: f64, sim: &SimProps) -> [[Complex64; 2]; 2] {
         tline_sim(freq, self, sim)
     }

@@ -4,16 +4,10 @@ use num::complex::Complex64;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-pub trait OnePort {
-    fn simulate(&self, freq: f64, sim: &SimProps) -> [[Complex64; 1]; 1];
-}
-
-pub trait TwoPort {
-    fn simulate(&self, freq: f64, sim: &SimProps) -> [[Complex64; 2]; 2];
-}
-
-pub trait ThreePort {
-    fn simulate(&self, freq: f64, sim: &SimProps) -> [[Complex64; 3]; 3];
+pub trait NPort<const N: usize> {
+    fn simulate(&self, freq: f64, sim: &SimProps) -> [[Complex64; N]; N];
+    // TODO: maybe generic implementation of sim_vec implementing a different trait?
+    fn get_port_num(&self) -> usize { N }
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

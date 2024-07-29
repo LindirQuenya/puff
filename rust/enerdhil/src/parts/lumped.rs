@@ -1,6 +1,6 @@
 use num::complex::{Complex64, ComplexFloat};
 
-use crate::sim::TwoPort;
+use crate::sim::NPort;
 
 #[derive(Clone)]
 pub struct LumpedProps {
@@ -18,7 +18,7 @@ impl LumpedProps {
     }
 }
 
-impl TwoPort for LumpedProps {
+impl NPort<2> for LumpedProps {
     fn simulate(
         &self,
         freq: f64,

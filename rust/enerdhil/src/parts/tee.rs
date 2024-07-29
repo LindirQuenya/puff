@@ -1,6 +1,6 @@
 use num::complex::Complex64;
 
-use crate::sim::ThreePort;
+use crate::sim::NPort;
 
 #[derive(Clone)]
 pub struct TeeProps;
@@ -11,7 +11,7 @@ impl TeeProps {
     }
 }
 
-impl ThreePort for TeeProps {
+impl NPort<3> for TeeProps {
     fn simulate(&self, _freq: f64, _sim: &crate::sim::SimProps) -> [[Complex64; 3]; 3] {
         let mut s = [[Complex64::new(2. / 3., 0.); 3]; 3];
         for i in 0..3 {

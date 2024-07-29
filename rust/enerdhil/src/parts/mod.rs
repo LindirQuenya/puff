@@ -28,11 +28,31 @@ pub enum Component {
 impl Component {
     pub fn simulate(&self, freq: f64, sim: &crate::sim::SimProps) -> Vec<Vec<Complex64>> {
         match self {
-            Component::TLine(t) => t.simulate(freq, sim).into_iter().map(|e| e.to_vec()).collect(),
-            Component::Open(o) => o.simulate(freq, sim).into_iter().map(|e| e.to_vec()).collect(),
-            Component::Short(s) => s.simulate(freq, sim).into_iter().map(|e| e.to_vec()).collect(),
-            Component::Tee(t) => t.simulate(freq, sim).into_iter().map(|e| e.to_vec()).collect(),
-            Component::Lumped(l) => l.simulate(freq, sim).into_iter().map(|e| e.to_vec()).collect(),
+            Component::TLine(t) => t
+                .simulate(freq, sim)
+                .into_iter()
+                .map(|e| e.to_vec())
+                .collect(),
+            Component::Open(o) => o
+                .simulate(freq, sim)
+                .into_iter()
+                .map(|e| e.to_vec())
+                .collect(),
+            Component::Short(s) => s
+                .simulate(freq, sim)
+                .into_iter()
+                .map(|e| e.to_vec())
+                .collect(),
+            Component::Tee(t) => t
+                .simulate(freq, sim)
+                .into_iter()
+                .map(|e| e.to_vec())
+                .collect(),
+            Component::Lumped(l) => l
+                .simulate(freq, sim)
+                .into_iter()
+                .map(|e| e.to_vec())
+                .collect(),
         }
     }
     pub fn get_port_num(&self) -> usize {

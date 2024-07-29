@@ -8,7 +8,10 @@ use num::complex::Complex64;
 use petgraph::Graph;
 use rand::{random, thread_rng, Rng};
 
-use crate::{parts::{open::OpenProps, short::ShortProps, tee::TeeProps, Component}, sim::SimProps};
+use crate::{
+    parts::{open::OpenProps, short::ShortProps, tee::TeeProps, Component},
+    sim::SimProps,
+};
 
 pub struct NetlistElement {
     pub component: Component,
@@ -162,8 +165,9 @@ pub struct SignalFlowGraph {
 
 impl SignalFlowGraph {
     pub fn new(connections: &HashMap<usize, [ComponentPort; 2]>) -> Self {
-        let mut graph = Graph::<SFGNode, Complex64>::with_capacity(connections.len(), 3*connections.len());
-        let mut port_to_index = HashMap::with_capacity(2*connections.len());
+        let mut graph =
+            Graph::<SFGNode, Complex64>::with_capacity(connections.len(), 3 * connections.len());
+        let mut port_to_index = HashMap::with_capacity(2 * connections.len());
         for (node, pair) in connections.iter() {
             let a_ind = graph.add_node(SFGNode {
                 num: *node,
@@ -183,7 +187,14 @@ impl SignalFlowGraph {
         }
     }
     // TODO this method could be optimized to death: results could be cached, double lookups avoided, etc.
-    fn populate_component(&mut self, ind: usize, is_virtual: bool, comp: &Component, freq: f64, sim: &SimProps) {
+    fn populate_component(
+        &mut self,
+        ind: usize,
+        is_virtual: bool,
+        comp: &Component,
+        freq: f64,
+        sim: &SimProps,
+    ) {
         let sparams = comp.simulate(freq, sim);
         let nports = comp.get_port_num();
         for i in 0..nports {
@@ -200,21 +211,45 @@ impl SignalFlowGraph {
                 };
                 let a_idx = self.port_to_index.get(&a_i).unwrap()[0];
                 let b_idx = self.port_to_index.get(&b_j).unwrap()[1];
-                self.graph.update_edge(a_idx, b_idx, *sparams.get(i).expect("bad s-param dim?").get(j).expect("bad s-param dim?"));
+                self.graph.update_edge(
+                    a_idx,
+                    b_idx,
+                    *sparams
+                        .get(i)
+                        .expect("bad s-param dim?")
+                        .get(j)
+                        .expect("bad s-param dim?"),
+                );
             }
         }
     }
-    pub fn populate_virtual(&mut self, freq: f64, virtual_components: &Vec<Component>, sim: &SimProps) {
+    pub fn populate_virtual(
+        &mut self,
+        freq: f64,
+        virtual_components: &Vec<Component>,
+        sim: &SimProps,
+    ) {
         for (ind, comp) in virtual_components.iter().enumerate() {
             self.populate_component(ind, true, comp, freq, sim);
         }
     }
-    pub fn populate_components(&mut self, freq: f64, components: &Vec<NetlistElement>, sim: &SimProps) {
+    pub fn populate_components(
+        &mut self,
+        freq: f64,
+        components: &Vec<NetlistElement>,
+        sim: &SimProps,
+    ) {
         for (ind, comp) in components.iter().enumerate() {
             self.populate_component(ind, false, &comp.component, freq, sim);
         }
     }
-    pub fn populate(&mut self, freq: f64, components: &Vec<NetlistElement>, virtual_components: &Vec<Component>, sim: &SimProps) {
+    pub fn populate(
+        &mut self,
+        freq: f64,
+        components: &Vec<NetlistElement>,
+        virtual_components: &Vec<Component>,
+        sim: &SimProps,
+    ) {
         self.populate_components(freq, components, sim);
         self.populate_virtual(freq, virtual_components, sim);
     }

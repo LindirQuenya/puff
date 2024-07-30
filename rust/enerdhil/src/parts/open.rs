@@ -3,6 +3,7 @@ use num::complex::Complex64;
 use crate::sim::NPort;
 
 #[derive(Clone, Copy, Default)]
+#[cfg_attr(debug_assertions, derive(Debug))]
 pub struct OpenProps;
 
 impl OpenProps {

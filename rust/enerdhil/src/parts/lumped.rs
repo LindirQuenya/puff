@@ -3,6 +3,7 @@ use num::complex::{Complex64, ComplexFloat};
 use crate::sim::NPort;
 
 #[derive(Clone)]
+#[cfg_attr(debug_assertions, derive(Debug))]
 pub struct LumpedProps {
     /// Resisitive impedance, Z0 units
     r_z: f64,
@@ -24,7 +25,12 @@ impl NPort<2> for LumpedProps {
         freq: f64,
         _sim: &crate::sim::SimProps,
     ) -> [[num::complex::Complex64; 2]; 2] {
-        let z = self.r_z + Complex64::i() * (self.c_z / freq + self.l_z * freq);
+        let z = if freq.abs() == 0.0 && self.c_z.abs() == 0.0 {
+            // To avoid a 0/0 NaN.
+            Complex64::new(self.r_z, 0.0)
+        } else {
+            self.r_z + Complex64::i() * (self.c_z / freq + self.l_z * freq)
+        };
         let mut s = [[Complex64::ZERO; 2]; 2];
         s[0][0] = (1. + 2. / z).recip();
         s[1][1] = s[0][0];

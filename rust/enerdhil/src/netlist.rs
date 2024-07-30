@@ -3,15 +3,16 @@ use std::{
     mem,
 };
 
-
 use crate::parts::{open::OpenProps, short::ShortProps, tee::TeeProps, Component};
 
+#[cfg_attr(debug_assertions, derive(Debug))]
 pub struct NetlistElement {
     pub component: Component,
     pub port_nets: Vec<usize>,
 }
 
-#[derive(PartialEq, Eq, Clone, Hash)]
+#[derive(PartialEq, Eq, Clone, Hash, Copy)]
+#[cfg_attr(debug_assertions, derive(Debug))]
 pub struct ComponentPort {
     /// The index of the component this references in the appropriate list,
     /// corresponding to the value of `is_virtual`.

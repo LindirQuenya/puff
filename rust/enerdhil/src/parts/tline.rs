@@ -9,6 +9,7 @@ use crate::sim::*;
 use crate::util::{cohn_k, disperse_f, hammerstad_z, ms_alpha_c, ms_alpha_d};
 
 #[derive(Clone)]
+#[cfg_attr(debug_assertions, derive(Debug))]
 pub struct TLineProps {
     zed: f64,
     /// In radians
@@ -26,6 +27,7 @@ pub struct TLineProps {
 }
 
 #[derive(Clone)]
+#[cfg_attr(debug_assertions, derive(Debug))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct TLineDimensions {
     /// In mm
@@ -35,6 +37,7 @@ pub struct TLineDimensions {
 }
 
 impl TLineProps {
+    // TODO move the error possibility to constraints. Maybe add internal flag, and trip validation if true?
     pub fn new(zed: f64, len: LengthSpec, adv: bool, sim: &SimProps) -> Result<Self, TLineError> {
         let width = width_tline(zed, sim)?;
         let ere = match sim.mode {

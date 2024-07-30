@@ -17,6 +17,7 @@ pub mod tline;
 // We should allow them to define their own components and use them.
 // Maybe this means dyn trait objects are necessary?
 #[derive(Clone)]
+#[cfg_attr(debug_assertions, derive(Debug))]
 pub enum Component {
     TLine(TLineProps),
     Open(OpenProps),

@@ -1,6 +1,10 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    slice::Iter,
+};
 
 use graph_cycles::Cycles;
+use itertools::Itertools;
 use num::complex::Complex64;
 use petgraph::{algo::all_simple_paths, graph::NodeIndex, Graph};
 
@@ -10,14 +14,7 @@ use crate::{
     sim::SimProps,
 };
 
-#[cfg(debug_assertions)]
-struct SFGNode {
-    num: usize,
-    into_port: bool,
-}
-#[cfg(not(debug_assertions))]
-struct SFGNode {}
-
+#[cfg_attr(debug_assertions, derive(Debug))]
 pub struct SFGCycles {
     paths: Vec<Vec<NodeIndex>>,
     /// First element of each is the indices of the paths contained,
@@ -25,8 +22,9 @@ pub struct SFGCycles {
     orders: Vec<Vec<(HashSet<usize>, HashSet<NodeIndex>)>>,
 }
 
+#[cfg_attr(debug_assertions, derive(Debug))]
 pub struct SignalFlowGraph {
-    graph: Graph<SFGNode, Complex64>,
+    graph: Graph<(), Complex64>,
     port_to_index: HashMap<ComponentPort, [NodeIndex; 2]>,
     cycles: Option<SFGCycles>,
     cycle_weights: Option<Vec<Vec<Complex64>>>,
@@ -35,25 +33,13 @@ pub struct SignalFlowGraph {
 impl SignalFlowGraph {
     pub fn new(connections: &HashMap<usize, [ComponentPort; 2]>) -> Self {
         let mut graph =
-            Graph::<SFGNode, Complex64>::with_capacity(connections.len(), 3 * connections.len());
+            Graph::<(), Complex64>::with_capacity(connections.len(), 3 * connections.len());
         let mut port_to_index = HashMap::with_capacity(2 * connections.len());
-        for (node, pair) in connections.iter() {
-            #[cfg(debug_assertions)]
-            let a_ind = graph.add_node(SFGNode {
-                num: *node,
-                into_port: true,
-            });
-            #[cfg(not(debug_assertions))]
-            let a_ind = graph.add_node(SFGNode {});
-            #[cfg(debug_assertions)]
-            let b_ind = graph.add_node(SFGNode {
-                num: *node,
-                into_port: false,
-            });
-            #[cfg(not(debug_assertions))]
-            let b_ind = graph.add_node(SFGNode {});
+        for pair in connections.values().into_iter() {
+            let a_ind = graph.add_node(());
+            let b_ind = graph.add_node(());
             port_to_index.insert(pair[0].clone(), [a_ind, b_ind]);
-            port_to_index.insert(pair[1].clone(), [a_ind, b_ind]);
+            port_to_index.insert(pair[1].clone(), [b_ind, a_ind]);
         }
         SignalFlowGraph {
             graph,
@@ -136,31 +122,39 @@ impl SignalFlowGraph {
     pub fn cache_cycles(&mut self) {
         self.cycles = Some(self.calculate_cycles());
     }
-    fn path_gain(&self, path: &[NodeIndex]) -> Complex64 {
-        path.iter()
-            .fold(
-                (Complex64::ONE, None),
-                |last: (Complex64, Option<NodeIndex>), node| match last.1 {
-                    Some(lastnode) => (
-                        last.0
-                            * self
-                                .graph
-                                .edges_connecting(lastnode, *node)
-                                .next()
-                                .unwrap()
-                                .weight(),
-                        Some(*node),
-                    ),
-                    None => (last.0, Some(*node)),
-                },
-            )
-            .0
+    fn path_gain(&self, path: Iter<NodeIndex>) -> Complex64 {
+        path.fold(
+            (Complex64::ONE, None),
+            |last: (Complex64, Option<NodeIndex>), node| match last.1 {
+                Some(lastnode) => (
+                    last.0
+                        * self
+                            .graph
+                            .edges_connecting(lastnode, *node)
+                            .next()
+                            .unwrap()
+                            .weight(),
+                    Some(*node),
+                ),
+                None => (last.0, Some(*node)),
+            },
+        )
+        .0
     }
     fn calculate_cycle_weights(&self, cycles: &SFGCycles) -> Vec<Vec<Complex64>> {
         let firstord_weights: Vec<Complex64> = cycles
             .paths
             .iter()
-            .map(|cycle| self.path_gain(cycle))
+            .map(|cycle| {
+                self.path_gain(
+                    cycle
+                        .iter()
+                        .chain(cycle.iter().take(1))
+                        .copied()
+                        .collect::<Vec<_>>()
+                        .iter(),
+                )
+            })
             .collect();
         cycles
             .orders
@@ -201,20 +195,27 @@ impl SignalFlowGraph {
         );
         loop {
             let mut neworder: Vec<(HashSet<usize>, HashSet<NodeIndex>)> = Vec::new();
+            let mut seen_loops_sorted: HashSet<Vec<usize>> = HashSet::new();
             for l in orders.last().unwrap() {
                 for (i, el) in cycle_contents.iter().enumerate() {
                     if !l.0.contains(&i) && l.1.is_disjoint(el) {
                         let mut loops = l.0.clone();
                         loops.insert(i);
-                        let mut contents = l.1.clone();
-                        contents.extend(el);
-                        neworder.push((loops, contents));
+                        // Prevent duplicate loops.
+                        let loops_sorted = loops.iter().copied().sorted().collect();
+                        if !seen_loops_sorted.contains(&loops_sorted) {
+                            let mut contents = l.1.clone();
+                            contents.extend(el);
+                            seen_loops_sorted.insert(loops_sorted);
+                            neworder.push((loops, contents));
+                        }
                     }
                 }
             }
             if neworder.is_empty() {
                 break;
             }
+            orders.push(neworder);
         }
         orders
     }
@@ -259,7 +260,7 @@ impl SignalFlowGraph {
         };
         let gain: Complex64 = all_simple_paths::<Vec<_>, _>(&self.graph, from_idx, to_idx, 0, None)
             .map(|path| {
-                self.path_gain(&path)
+                self.path_gain(path.iter())
                     * Self::nonintersecting_graph_det(
                         &HashSet::from_iter(path.iter().cloned()),
                         cycles,
@@ -268,5 +269,61 @@ impl SignalFlowGraph {
             })
             .sum();
         gain / Self::nonintersecting_graph_det(&HashSet::new(), cycles, cycle_weights)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use num::complex::ComplexFloat;
+
+    use crate::{
+        netlist::netlist_to_connections,
+        parts::{lumped::LumpedProps, tline::TLineProps},
+        sim::{LengthSpec, SimType},
+    };
+
+    use super::*;
+    const SIM: SimProps = SimProps {
+        mode: SimType::Microstrip,
+        design_freq: 3e9,
+        surface_roughness: 2.0,
+        conductivity: 5.8e7,
+        z0: 50.0,
+        mu0: 1.25663706212e-6,
+        eps0: 8.8541878128e-12,
+        epsilon_r: 10.2,
+        height: 1.27,
+        loss_tangent: 0.02,
+        metal_thickness: 0.035,
+    };
+
+    #[test]
+    fn tline_virtual_short() {
+        let line = TLineProps::new(SIM.z0, LengthSpec::Degrees(90.), false, &SIM).unwrap();
+        let l50 = LumpedProps::new(1., 0., 0.);
+        let list = [
+            NetlistElement {
+                component: Component::Lumped(l50),
+                port_nets: vec![0, 1],
+            },
+            NetlistElement {
+                component: Component::TLine(line),
+                port_nets: vec![1, 2],
+            },
+        ];
+        let grounds = HashSet::from_iter(0..=0);
+        let (conn, virt_comp) = netlist_to_connections(&list, &grounds);
+        // println!("{conn:#?}\n\n{list:#?}\n{virt_comp:#?}");
+        let mut sfg = SignalFlowGraph::new(&conn);
+        sfg.populate(SIM.design_freq, &list, &virt_comp, &SIM);
+        // println!("{sfg:#?}");
+        let port1 = ComponentPort {
+            component_ind: 1,
+            is_virtual: false,
+            port_num: 0,
+        };
+        let s11 = sfg.masons_rule(port1, port1);
+        // println!("{s11:#?}");
+        assert!((Complex64::new(-1.0, 0.0) - s11).abs() < 1e-12);
     }
 }

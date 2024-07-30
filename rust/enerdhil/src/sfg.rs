@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    mem,
-};
+use std::collections::{HashMap, HashSet};
 
 use graph_cycles::Cycles;
 use num::complex::Complex64;
@@ -9,7 +6,7 @@ use petgraph::{algo::all_simple_paths, graph::NodeIndex, Graph};
 
 use crate::{
     netlist::{ComponentPort, NetlistElement},
-    parts::{open::OpenProps, short::ShortProps, tee::TeeProps, Component},
+    parts::Component,
     sim::SimProps,
 };
 
@@ -98,7 +95,7 @@ impl SignalFlowGraph {
     pub fn populate_virtual(
         &mut self,
         freq: f64,
-        virtual_components: &Vec<Component>,
+        virtual_components: &[Component],
         sim: &SimProps,
     ) {
         for (ind, comp) in virtual_components.iter().enumerate() {
@@ -108,7 +105,7 @@ impl SignalFlowGraph {
     pub fn populate_components(
         &mut self,
         freq: f64,
-        components: &Vec<NetlistElement>,
+        components: &[NetlistElement],
         sim: &SimProps,
     ) {
         for (ind, comp) in components.iter().enumerate() {
@@ -118,8 +115,8 @@ impl SignalFlowGraph {
     pub fn populate(
         &mut self,
         freq: f64,
-        components: &Vec<NetlistElement>,
-        virtual_components: &Vec<Component>,
+        components: &[NetlistElement],
+        virtual_components: &[Component],
         sim: &SimProps,
     ) {
         self.populate_components(freq, components, sim);
@@ -127,7 +124,7 @@ impl SignalFlowGraph {
     }
     pub fn calculate_cycles(&self) -> SFGCycles {
         let cycles = self.graph.cycles();
-        let cycle_contents = cycles
+        let cycle_contents: Vec<HashSet<NodeIndex>> = cycles
             .iter()
             .map(|cycle| HashSet::from_iter(cycle.iter().cloned()))
             .collect();
@@ -139,7 +136,7 @@ impl SignalFlowGraph {
     pub fn cache_cycles(&mut self) {
         self.cycles = Some(self.calculate_cycles());
     }
-    fn path_gain(&self, path: &Vec<NodeIndex>) -> Complex64 {
+    fn path_gain(&self, path: &[NodeIndex]) -> Complex64 {
         path.iter()
             .fold(
                 (Complex64::ONE, None),
@@ -184,10 +181,10 @@ impl SignalFlowGraph {
             Some(c) => c,
             None => &self.calculate_cycles(),
         };
-        self.cycle_weights = Some(self.calculate_cycle_weights(&cycles));
+        self.cycle_weights = Some(self.calculate_cycle_weights(cycles));
     }
     fn get_orders(
-        cycle_contents: &Vec<HashSet<NodeIndex>>,
+        cycle_contents: &[HashSet<NodeIndex>],
     ) -> Vec<Vec<(HashSet<usize>, HashSet<NodeIndex>)>> {
         let mut orders: Vec<Vec<(HashSet<usize>, HashSet<NodeIndex>)>> = Vec::new();
         orders.push(
@@ -215,7 +212,7 @@ impl SignalFlowGraph {
                     }
                 }
             }
-            if neworder.len() == 0 {
+            if neworder.is_empty() {
                 break;
             }
         }
@@ -224,7 +221,7 @@ impl SignalFlowGraph {
     fn nonintersecting_graph_det(
         path: &HashSet<NodeIndex>,
         cycles: &SFGCycles,
-        weights: &Vec<Vec<Complex64>>,
+        weights: &[Vec<Complex64>],
     ) -> Complex64 {
         cycles
             .orders
@@ -258,7 +255,7 @@ impl SignalFlowGraph {
         };
         let cycle_weights = match &self.cycle_weights {
             Some(w) => w,
-            None => &self.calculate_cycle_weights(&cycles),
+            None => &self.calculate_cycle_weights(cycles),
         };
         let gain: Complex64 = all_simple_paths::<Vec<_>, _>(&self.graph, from_idx, to_idx, 0, None)
             .map(|path| {

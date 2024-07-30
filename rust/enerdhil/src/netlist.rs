@@ -3,14 +3,8 @@ use std::{
     mem,
 };
 
-use graph_cycles::Cycles;
-use num::complex::Complex64;
-use petgraph::{algo::all_simple_paths, graph::NodeIndex, Graph};
 
-use crate::{
-    parts::{open::OpenProps, short::ShortProps, tee::TeeProps, Component},
-    sim::SimProps,
-};
+use crate::parts::{open::OpenProps, short::ShortProps, tee::TeeProps, Component};
 
 pub struct NetlistElement {
     pub component: Component,
@@ -33,7 +27,7 @@ pub struct ComponentPort {
 /// note: ports should already be in the netlist as 1z grounded lumped elements.
 // TODO maybe refactor, this is kinda long.
 pub fn netlist_to_connections(
-    list: &Vec<NetlistElement>,
+    list: &[NetlistElement],
     grounds: &HashSet<usize>,
 ) -> (HashMap<usize, [ComponentPort; 2]>, Vec<Component>) {
     // Translation from net numbers to node numbers.

@@ -2,7 +2,7 @@ use num::complex::Complex64;
 
 use crate::sim::NPort;
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Default)]
 pub struct ShortProps;
 
 impl ShortProps {

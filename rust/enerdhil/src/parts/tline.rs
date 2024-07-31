@@ -371,9 +371,10 @@ pub enum TLineError {
 
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
+    use std::{collections::HashMap, fs::File};
 
     use super::*;
+    use ordered_float::OrderedFloat;
     use serde_json;
 
     #[test]
@@ -382,7 +383,7 @@ mod tests {
         let max = 10.0E9;
         let n = 201;
         let step = (max - min) / (n - 1) as f64;
-        let mut sparams: Vec<[[Complex64; 2]; 2]> = Vec::new();
+        let mut sparams: HashMap<OrderedFloat<f64>, [[Complex64; 2]; 2]> = HashMap::new();
         let sim = SimProps {
             mode: SimType::Microstrip,
             design_freq: 3e9,
@@ -399,7 +400,8 @@ mod tests {
         let line = TLineProps::new(25.0, LengthSpec::Millimeters(12.0), false, &sim)
             .expect("Hard-coded tline should work.");
         for i in 0..n {
-            sparams.push(line.simulate(i as f64 * step, &sim));
+            let freq = i as f64 * step;
+            sparams.insert(OrderedFloat(freq), line.simulate(freq, &sim));
         }
         let file =
             File::create("test/data/tline/25ohm.json").expect("Failed to open test data file.");
@@ -411,7 +413,7 @@ mod tests {
         let max = 10.0E9;
         let n = 201;
         let step = (max - min) / (n - 1) as f64;
-        let mut sparams: Vec<[[Complex64; 2]; 2]> = Vec::new();
+        let mut sparams: HashMap<OrderedFloat<f64>, [[Complex64; 2]; 2]> = HashMap::new();
         let sim = SimProps {
             mode: SimType::Microstrip,
             design_freq: 3e9,
@@ -428,7 +430,8 @@ mod tests {
         let line = TLineProps::new(25.0, LengthSpec::Millimeters(12.0), true, &sim)
             .expect("Hard-coded tline should work.");
         for i in 0..n {
-            sparams.push(line.simulate(i as f64 * step, &sim));
+            let freq = i as f64 * step;
+            sparams.insert(OrderedFloat(freq), line.simulate(freq, &sim));
         }
         let file =
             File::create("test/data/tline/s25ohm.json").expect("Failed to open test data file.");

@@ -16,7 +16,8 @@ ordered-float = "4.2.2"
 
 [dev-dependencies]
 serde_json = "1.0.117"
-num = {version = "0.4.3", features = ["serde"]}
+num = { version = "0.4.3", features = ["serde"] }
+ordered-float = { version = "4.2.2", features = ["serde"] }
 
 [features]
 serde = ["dep:serde"]

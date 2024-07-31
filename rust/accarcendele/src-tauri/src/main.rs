@@ -8,9 +8,10 @@ use std::collections::HashMap;
 
 use enerdhil::{
     constraint::{validate, Constraints},
-    sim::{LengthCorrectable, SimProps, SimType},
     parts::tline::TLineProps,
-    parts::Component, Dimensions,
+    parts::Component,
+    sim::{LengthCorrectable, SimProps, SimType},
+    Dimensions,
 };
 use parking_lot::{Mutex, RwLock};
 use tauri::{Emitter, Manager, State, Window};
@@ -71,7 +72,9 @@ fn update_config(newconf: ConfigUpdate, simstate: State<SimSettings>, window: Wi
         tstypes::SimType::StriplineMH => (SimType::Stripline, true),
     };
     conf.constr.board_dim = (newconf.s * 1000., newconf.s * 1000.);
-    let _ = window.emit("config-update", ()).map_err(|e| eprintln!("{}", e.to_string()));
+    let _ = window
+        .emit("config-update", ())
+        .map_err(|e| eprintln!("{}", e.to_string()));
 }
 
 fn main() {

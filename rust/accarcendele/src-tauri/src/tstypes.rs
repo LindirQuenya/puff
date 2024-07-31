@@ -1,4 +1,4 @@
-use enerdhil::{sim::LengthSpec, parts::tline::TLineDimensions};
+use enerdhil::{parts::tline::TLineDimensions, sim::LengthSpec};
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 

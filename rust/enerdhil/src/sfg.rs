@@ -149,23 +149,17 @@ impl SignalFlowGraph {
         self.cycles = Some(self.calculate_cycles());
     }
     pub fn path_gain(&self, path: Iter<NodeIndex>) -> Complex64 {
-        path.fold(
-            (Complex64::ONE, None),
-            |last: (Complex64, Option<NodeIndex>), node| match last.1 {
-                Some(lastnode) => (
-                    last.0
-                        * self
-                            .graph
-                            .edges_connecting(lastnode, *node)
-                            .next()
-                            .unwrap()
-                            .weight(),
-                    Some(*node),
-                ),
-                None => (last.0, Some(*node)),
-            },
-        )
-        .0
+        // TODO maybe optimize this to not require copying for cycles? Surely there's a way.
+        // I think it might be possible to abstract over the circular window and non-circular window methods?
+        path.tuple_windows::<(_, _)>()
+            .map(|(lastnode, node)| {
+                self.graph
+                    .edges_connecting(*lastnode, *node)
+                    .next()
+                    .unwrap()
+                    .weight()
+            })
+            .product()
     }
     pub fn calculate_cycle_weights(&self, cycles: &SFGCycles) -> Vec<Vec<Complex64>> {
         let firstord_weights: Vec<Complex64> = cycles
@@ -188,10 +182,7 @@ impl SignalFlowGraph {
             .map(|order| {
                 order
                     .iter()
-                    .map(|l| {
-                        l.0.iter()
-                            .fold(Complex64::ONE, |acc, i| acc * firstord_weights[*i])
-                    })
+                    .map(|l| l.0.iter().map(|i| firstord_weights[*i]).product())
                     .collect()
             })
             .collect()
@@ -303,6 +294,8 @@ impl SignalFlowGraph {
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+
     use num::{complex::ComplexFloat, Bounded};
     use ordered_float::OrderedFloat;
 
@@ -344,17 +337,14 @@ mod tests {
         ];
         let grounds = HashSet::from_iter(0..=0);
         let (conn, virt_comp) = netlist_to_connections(&list, &grounds);
-        // println!("{conn:#?}\n\n{list:#?}\n{virt_comp:#?}");
         let mut sfg = SignalFlowGraph::new(&conn);
         sfg.populate(SIM.design_freq, &list, &virt_comp, &SIM);
-        // println!("{sfg:#?}");
         let port1 = ComponentPort {
             component_ind: 0,
             is_virtual: false,
             port_num: 1,
         };
         let s11 = sfg.masons_rule(port1, port1, true);
-        // println!("{s11:#?}");
         assert!((Complex64::new(-1.0, 0.0) - s11).abs() < 1e-12);
     }
 
@@ -398,8 +388,8 @@ mod tests {
     }
 
     #[test]
-    /// Full branchline coupler
-    fn branchline_coupler() {
+    /// Full branchline coupler at design frequency
+    fn branchline_coupler_fd() {
         let z0line = TLineProps::new(SIM.z0, LengthSpec::Degrees(90.), false, &SIM).unwrap();
         let thickline =
             TLineProps::new(SIM.z0 / (2.0.sqrt()), LengthSpec::Degrees(90.), false, &SIM).unwrap();
@@ -440,11 +430,8 @@ mod tests {
         ];
         let grounds: HashSet<usize> = HashSet::new();
         let (conn, virt_comp) = netlist_to_connections(&list, &grounds);
-        // println!("{virt_comp:#?}");
         let mut sfg = SignalFlowGraph::new(&conn);
         sfg.populate(SIM.design_freq, &list, &virt_comp, &SIM);
-        // println!("{sfg:#?}");
-        // println!("{:?}", petgraph::dot::Dot::new(&sfg.graph));
         let ports = [
             ComponentPort {
                 component_ind: 0,
@@ -498,5 +485,97 @@ mod tests {
             .max()
             .unwrap_or(OrderedFloat::max_value());
         assert!(maxerr.into_inner() < 1e-12);
+    }
+
+    #[test]
+    /// Full branchline coupler - frequency sweep
+    fn branchline_coupler_sweep() {
+        let z0line = TLineProps::new(SIM.z0, LengthSpec::Degrees(90.), false, &SIM).unwrap();
+        let thickline =
+            TLineProps::new(SIM.z0 / (2.0.sqrt()), LengthSpec::Degrees(90.), false, &SIM).unwrap();
+        let l50 = MatchProps::default();
+        let list = [
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![1],
+            },
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![2],
+            },
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![3],
+            },
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![4],
+            },
+            NetlistElement {
+                component: Component::TLine(z0line),
+                port_nets: vec![1, 2],
+            },
+            NetlistElement {
+                component: Component::TLine(z0line),
+                port_nets: vec![3, 4],
+            },
+            NetlistElement {
+                component: Component::TLine(thickline),
+                port_nets: vec![1, 3],
+            },
+            NetlistElement {
+                component: Component::TLine(thickline),
+                port_nets: vec![2, 4],
+            },
+        ];
+        let grounds: HashSet<usize> = HashSet::new();
+        let (conn, virt_comp) = netlist_to_connections(&list, &grounds);
+        let mut sfg = SignalFlowGraph::new(&conn);
+        let ports = [
+            ComponentPort {
+                component_ind: 0,
+                is_virtual: false,
+                port_num: 0,
+            },
+            ComponentPort {
+                component_ind: 1,
+                is_virtual: false,
+                port_num: 0,
+            },
+            ComponentPort {
+                component_ind: 2,
+                is_virtual: false,
+                port_num: 0,
+            },
+            ComponentPort {
+                component_ind: 3,
+                is_virtual: false,
+                port_num: 0,
+            },
+        ];
+        let min = 0.0;
+        let max = 2. * SIM.design_freq;
+        let n = 201;
+        let step = (max - min) / (n - 1) as f64;
+        let mut sparams: HashMap<OrderedFloat<f64>, Vec<Vec<Complex64>>> = HashMap::new();
+        for i in 0..n {
+            let freq = i as f64 * step;
+            sfg.populate(freq, &list, &virt_comp, &SIM);
+            sparams.insert(
+                OrderedFloat(freq),
+                ports
+                    .iter()
+                    .map(|porta| {
+                        ports
+                            .iter()
+                            .map(|portb| sfg.masons_rule(*portb, *porta, true))
+                            .collect()
+                    })
+                    .collect(),
+            );
+        }
+        let file =
+            File::create("test/data/sfg/branchline.json").expect("Failed to open test data file.");
+        serde_json::to_writer_pretty(file, &sparams).expect("Unable to serialize s-parameters.");
     }
 }

@@ -28,6 +28,7 @@ pub struct SignalFlowGraph {
     port_to_index: HashMap<ComponentPort, [NodeIndex; 2]>,
     cycles: Option<SFGCycles>,
     cycle_weights: Option<Vec<Vec<Complex64>>>,
+    cycles_out_of_date: bool,
 }
 
 impl SignalFlowGraph {
@@ -46,6 +47,7 @@ impl SignalFlowGraph {
             port_to_index,
             cycles: None,
             cycle_weights: None,
+            cycles_out_of_date: false,
         }
     }
     // TODO this method could be optimized to death: results could be cached, double lookups avoided, etc.
@@ -74,10 +76,16 @@ impl SignalFlowGraph {
                 // TODO result this
                 let a_idx = self.port_to_index.get(&a_i).unwrap()[0];
                 let b_idx = self.port_to_index.get(&b_j).unwrap()[1];
+                let existed = self.graph.find_edge(a_idx, b_idx).is_some();
                 let edge_idx = self.graph.update_edge(a_idx, b_idx, sparams[i][j]);
                 // new: remove zero edges
                 if sparams[i][j].abs() == 0.0 {
                     self.graph.remove_edge(edge_idx);
+                    if existed {
+                        self.cycles_out_of_date = true;
+                    }
+                } else if !existed {
+                    self.cycles_out_of_date = true;
                 }
             }
         }
@@ -146,7 +154,10 @@ impl SignalFlowGraph {
         }
     }
     fn cache_cycles(&mut self) {
-        self.cycles = Some(self.calculate_cycles());
+        if self.cycles_out_of_date {
+            self.cycles = Some(self.calculate_cycles());
+            self.cycles_out_of_date = false;
+        }
     }
     pub fn path_gain(&self, path: Iter<NodeIndex>) -> Complex64 {
         // TODO maybe optimize this to not require copying for cycles? Surely there's a way.
@@ -558,9 +569,11 @@ mod tests {
         let n = 201;
         let step = (max - min) / (n - 1) as f64;
         let mut sparams: HashMap<OrderedFloat<f64>, Vec<Vec<Complex64>>> = HashMap::new();
+        // Virtual components don't change with frequency.
+        sfg.populate_virtual(0.0, &virt_comp, &SIM);
         for i in 0..n {
             let freq = i as f64 * step;
-            sfg.populate(freq, &list, &virt_comp, &SIM);
+            sfg.populate_components(freq, &list, &SIM);
             sparams.insert(
                 OrderedFloat(freq),
                 ports

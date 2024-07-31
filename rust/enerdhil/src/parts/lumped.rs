@@ -2,7 +2,7 @@ use num::complex::{Complex64, ComplexFloat};
 
 use crate::sim::NPort;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 #[cfg_attr(debug_assertions, derive(Debug))]
 pub struct LumpedProps {
     /// Resisitive impedance, Z0 units

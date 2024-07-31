@@ -8,7 +8,7 @@ use num::complex::{Complex64, ComplexFloat};
 use crate::sim::*;
 use crate::util::{cohn_k, disperse_f, hammerstad_z, ms_alpha_c, ms_alpha_d};
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 #[cfg_attr(debug_assertions, derive(Debug))]
 pub struct TLineProps {
     zed: f64,
@@ -26,7 +26,7 @@ pub struct TLineProps {
     e_eff_e0: f64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct TLineDimensions {

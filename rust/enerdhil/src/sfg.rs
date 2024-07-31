@@ -5,7 +5,7 @@ use std::{
 
 use graph_cycles::Cycles;
 use itertools::Itertools;
-use num::complex::Complex64;
+use num::complex::{Complex64, ComplexFloat};
 use petgraph::{algo::all_simple_paths, graph::NodeIndex, Graph};
 
 use crate::{
@@ -74,11 +74,15 @@ impl SignalFlowGraph {
                 // TODO result this
                 let a_idx = self.port_to_index.get(&a_i).unwrap()[0];
                 let b_idx = self.port_to_index.get(&b_j).unwrap()[1];
-                self.graph.update_edge(a_idx, b_idx, sparams[i][j]);
+                let edge_idx = self.graph.update_edge(a_idx, b_idx, sparams[i][j]);
+                // new: remove zero edges
+                if sparams[i][j].abs() == 0.0 {
+                    self.graph.remove_edge(edge_idx);
+                }
             }
         }
     }
-    pub fn populate_virtual(
+    fn populate_virtual_inner(
         &mut self,
         freq: f64,
         virtual_components: &[Component],
@@ -88,7 +92,17 @@ impl SignalFlowGraph {
             self.populate_component(ind, true, comp, freq, sim);
         }
     }
-    pub fn populate_components(
+    pub fn populate_virtual(
+        &mut self,
+        freq: f64,
+        virtual_components: &[Component],
+        sim: &SimProps,
+    ) {
+        self.populate_virtual_inner(freq, virtual_components, sim);
+        self.cache_cycles();
+        self.cache_cycle_weights();
+    }
+    fn populate_components_inner(
         &mut self,
         freq: f64,
         components: &[NetlistElement],
@@ -98,6 +112,16 @@ impl SignalFlowGraph {
             self.populate_component(ind, false, &comp.component, freq, sim);
         }
     }
+    pub fn populate_components(
+        &mut self,
+        freq: f64,
+        components: &[NetlistElement],
+        sim: &SimProps,
+    ) {
+        self.populate_components_inner(freq, components, sim);
+        self.cache_cycles();
+        self.cache_cycle_weights();
+    }
     pub fn populate(
         &mut self,
         freq: f64,
@@ -105,8 +129,10 @@ impl SignalFlowGraph {
         virtual_components: &[Component],
         sim: &SimProps,
     ) {
-        self.populate_components(freq, components, sim);
-        self.populate_virtual(freq, virtual_components, sim);
+        self.populate_components_inner(freq, components, sim);
+        self.populate_virtual_inner(freq, virtual_components, sim);
+        self.cache_cycles();
+        self.cache_cycle_weights();
     }
     pub fn calculate_cycles(&self) -> SFGCycles {
         let cycles = self.graph.cycles();
@@ -119,10 +145,10 @@ impl SignalFlowGraph {
             orders: Self::get_orders(&cycle_contents),
         }
     }
-    pub fn cache_cycles(&mut self) {
+    fn cache_cycles(&mut self) {
         self.cycles = Some(self.calculate_cycles());
     }
-    fn path_gain(&self, path: Iter<NodeIndex>) -> Complex64 {
+    pub fn path_gain(&self, path: Iter<NodeIndex>) -> Complex64 {
         path.fold(
             (Complex64::ONE, None),
             |last: (Complex64, Option<NodeIndex>), node| match last.1 {
@@ -141,7 +167,7 @@ impl SignalFlowGraph {
         )
         .0
     }
-    fn calculate_cycle_weights(&self, cycles: &SFGCycles) -> Vec<Vec<Complex64>> {
+    pub fn calculate_cycle_weights(&self, cycles: &SFGCycles) -> Vec<Vec<Complex64>> {
         let firstord_weights: Vec<Complex64> = cycles
             .paths
             .iter()
@@ -170,7 +196,7 @@ impl SignalFlowGraph {
             })
             .collect()
     }
-    pub fn cache_cycle_weights(&mut self) {
+    fn cache_cycle_weights(&mut self) {
         let cycles = match &self.cycles {
             Some(c) => c,
             None => &self.calculate_cycles(),
@@ -246,10 +272,13 @@ impl SignalFlowGraph {
             .sum::<Complex64>()
             + Complex64::ONE
     }
-    pub fn masons_rule(&self, from: ComponentPort, to: ComponentPort) -> Complex64 {
+    pub fn masons_rule(&self, from: ComponentPort, to: ComponentPort, flip_a_b: bool) -> Complex64 {
         // TODO result this
-        let from_idx = self.port_to_index.get(&from).unwrap()[0];
-        let to_idx = self.port_to_index.get(&to).unwrap()[1];
+        let mut from_idx = self.port_to_index.get(&from).unwrap()[0];
+        let mut to_idx = self.port_to_index.get(&to).unwrap()[1];
+        if flip_a_b {
+            (from_idx, to_idx) = (to_idx, from_idx);
+        }
         let cycles = match &self.cycles {
             Some(c) => c,
             None => &self.calculate_cycles(),
@@ -274,11 +303,12 @@ impl SignalFlowGraph {
 
 #[cfg(test)]
 mod tests {
-    use num::complex::ComplexFloat;
+    use num::{complex::ComplexFloat, Bounded};
+    use ordered_float::OrderedFloat;
 
     use crate::{
         netlist::netlist_to_connections,
-        parts::{lumped::LumpedProps, tline::TLineProps},
+        parts::{lumped::LumpedProps, lumpedmatch::MatchProps, tline::TLineProps},
         sim::{LengthSpec, SimType},
     };
 
@@ -298,6 +328,7 @@ mod tests {
     };
 
     #[test]
+    /// RF ground at design frequency, using an explicit lumped element rather than a match.
     fn tline_virtual_short() {
         let line = TLineProps::new(SIM.z0, LengthSpec::Degrees(90.), false, &SIM).unwrap();
         let l50 = LumpedProps::new(1., 0., 0.);
@@ -318,12 +349,154 @@ mod tests {
         sfg.populate(SIM.design_freq, &list, &virt_comp, &SIM);
         // println!("{sfg:#?}");
         let port1 = ComponentPort {
-            component_ind: 1,
+            component_ind: 0,
+            is_virtual: false,
+            port_num: 1,
+        };
+        let s11 = sfg.masons_rule(port1, port1, true);
+        // println!("{s11:#?}");
+        assert!((Complex64::new(-1.0, 0.0) - s11).abs() < 1e-12);
+    }
+
+    #[test]
+    /// Branchline coupler segment: even-even mode.
+    fn branchline_ee() {
+        let z0line = TLineProps::new(SIM.z0, LengthSpec::Degrees(45.), false, &SIM).unwrap();
+        let thickline =
+            TLineProps::new(SIM.z0 / (2.0.sqrt()), LengthSpec::Degrees(45.), false, &SIM).unwrap();
+        let l50 = MatchProps::default();
+        let list = [
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![1],
+            },
+            NetlistElement {
+                component: Component::TLine(z0line),
+                port_nets: vec![1, 2],
+            },
+            NetlistElement {
+                component: Component::TLine(thickline),
+                port_nets: vec![1, 3],
+            },
+        ];
+        let grounds: HashSet<usize> = HashSet::new();
+        let (conn, virt_comp) = netlist_to_connections(&list, &grounds);
+        println!("{virt_comp:#?}");
+        let mut sfg = SignalFlowGraph::new(&conn);
+        sfg.populate(SIM.design_freq, &list, &virt_comp, &SIM);
+        // println!("{sfg:#?}");
+        // println!("{:?}", petgraph::dot::Dot::new(&sfg.graph));
+        let port0 = ComponentPort {
+            component_ind: 0,
             is_virtual: false,
             port_num: 0,
         };
-        let s11 = sfg.masons_rule(port1, port1);
+        let s11 = sfg.masons_rule(port0, port0, true);
+        let expected = Complex64::from_polar(1., -135f64.to_radians());
+        assert!((s11 - expected).abs() < 1e-12);
         // println!("{s11:#?}");
-        assert!((Complex64::new(-1.0, 0.0) - s11).abs() < 1e-12);
+    }
+
+    #[test]
+    /// Full branchline coupler
+    fn branchline_coupler() {
+        let z0line = TLineProps::new(SIM.z0, LengthSpec::Degrees(90.), false, &SIM).unwrap();
+        let thickline =
+            TLineProps::new(SIM.z0 / (2.0.sqrt()), LengthSpec::Degrees(90.), false, &SIM).unwrap();
+        let l50 = MatchProps::default();
+        let list = [
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![1],
+            },
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![2],
+            },
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![3],
+            },
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![4],
+            },
+            NetlistElement {
+                component: Component::TLine(z0line),
+                port_nets: vec![1, 2],
+            },
+            NetlistElement {
+                component: Component::TLine(z0line),
+                port_nets: vec![3, 4],
+            },
+            NetlistElement {
+                component: Component::TLine(thickline),
+                port_nets: vec![1, 3],
+            },
+            NetlistElement {
+                component: Component::TLine(thickline),
+                port_nets: vec![2, 4],
+            },
+        ];
+        let grounds: HashSet<usize> = HashSet::new();
+        let (conn, virt_comp) = netlist_to_connections(&list, &grounds);
+        // println!("{virt_comp:#?}");
+        let mut sfg = SignalFlowGraph::new(&conn);
+        sfg.populate(SIM.design_freq, &list, &virt_comp, &SIM);
+        // println!("{sfg:#?}");
+        // println!("{:?}", petgraph::dot::Dot::new(&sfg.graph));
+        let ports = [
+            ComponentPort {
+                component_ind: 0,
+                is_virtual: false,
+                port_num: 0,
+            },
+            ComponentPort {
+                component_ind: 1,
+                is_virtual: false,
+                port_num: 0,
+            },
+            ComponentPort {
+                component_ind: 2,
+                is_virtual: false,
+                port_num: 0,
+            },
+            ComponentPort {
+                component_ind: 3,
+                is_virtual: false,
+                port_num: 0,
+            },
+        ];
+        let half_90 = Complex64::from_polar(2.0.sqrt().recip(), -90f64.to_radians());
+        let half_180 = Complex64::from_polar(2.0.sqrt().recip(), 180f64.to_radians());
+        let zero = Complex64::ZERO;
+        let expected = [
+            [zero, zero, half_90, half_180],
+            [zero, zero, half_180, half_90],
+            [half_90, half_180, zero, zero],
+            [half_180, half_90, zero, zero],
+        ];
+        let sparams: Vec<Vec<Complex64>> = ports
+            .iter()
+            .map(|porta| {
+                ports
+                    .iter()
+                    .map(|portb| sfg.masons_rule(*portb, *porta, true))
+                    .collect()
+            })
+            .collect();
+        let maxerr = expected
+            .iter()
+            .enumerate()
+            .map(|(i, row)| {
+                row.iter()
+                    .enumerate()
+                    .map(|(j, val)| OrderedFloat((sparams[i][j] - val).abs()))
+                    .max()
+                    .unwrap_or(OrderedFloat::max_value())
+            })
+            .max()
+            .unwrap_or(OrderedFloat::max_value());
+        assert!(maxerr.into_inner() < 1e-12);
     }
 }

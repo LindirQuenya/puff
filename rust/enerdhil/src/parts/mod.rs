@@ -1,4 +1,5 @@
 use lumped::LumpedProps;
+use lumpedmatch::MatchProps;
 use num::complex::Complex64;
 use open::OpenProps;
 use short::ShortProps;
@@ -8,6 +9,7 @@ use tline::TLineProps;
 use crate::sim::NPort;
 
 pub mod lumped;
+pub mod lumpedmatch;
 pub mod open;
 pub mod short;
 pub mod tee;
@@ -24,6 +26,7 @@ pub enum Component {
     Short(ShortProps),
     Tee(TeeProps),
     Lumped(LumpedProps),
+    Match(MatchProps),
 }
 
 impl Component {
@@ -54,6 +57,11 @@ impl Component {
                 .into_iter()
                 .map(|e| e.to_vec())
                 .collect(),
+            Component::Match(m) => m
+                .simulate(freq, sim)
+                .into_iter()
+                .map(|e| e.to_vec())
+                .collect(),
         }
     }
     pub fn get_port_num(&self) -> usize {
@@ -63,6 +71,7 @@ impl Component {
             Component::Short(s) => s.get_port_num(),
             Component::Tee(t) => t.get_port_num(),
             Component::Lumped(l) => l.get_port_num(),
+            Component::Match(m) => m.get_port_num(),
         }
     }
 }

@@ -14,6 +14,7 @@ use crate::{
     sim::SimProps,
 };
 
+#[derive(Clone)]
 #[cfg_attr(debug_assertions, derive(Debug))]
 pub struct SFGCycles {
     paths: Vec<Vec<NodeIndex>>,
@@ -22,6 +23,7 @@ pub struct SFGCycles {
     orders: Vec<Vec<(HashSet<usize>, HashSet<NodeIndex>)>>,
 }
 
+#[derive(Clone)]
 #[cfg_attr(debug_assertions, derive(Debug))]
 pub struct SignalFlowGraph {
     graph: Graph<(), Complex64>,
@@ -309,6 +311,7 @@ mod tests {
 
     use num::{complex::ComplexFloat, Bounded};
     use ordered_float::OrderedFloat;
+    use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
     use crate::{
         netlist::netlist_to_connections,
@@ -382,11 +385,8 @@ mod tests {
         ];
         let grounds: HashSet<usize> = HashSet::new();
         let (conn, virt_comp) = netlist_to_connections(&list, &grounds);
-        println!("{virt_comp:#?}");
         let mut sfg = SignalFlowGraph::new(&conn);
         sfg.populate(SIM.design_freq, &list, &virt_comp, &SIM);
-        // println!("{sfg:#?}");
-        // println!("{:?}", petgraph::dot::Dot::new(&sfg.graph));
         let port0 = ComponentPort {
             component_ind: 0,
             is_virtual: false,
@@ -395,7 +395,6 @@ mod tests {
         let s11 = sfg.masons_rule(port0, port0, true);
         let expected = Complex64::from_polar(1., -135f64.to_radians());
         assert!((s11 - expected).abs() < 1e-12);
-        // println!("{s11:#?}");
     }
 
     #[test]
@@ -570,23 +569,29 @@ mod tests {
         let step = (max - min) / (n - 1) as f64;
         let mut sparams: HashMap<OrderedFloat<f64>, Vec<Vec<Complex64>>> = HashMap::new();
         // Virtual components don't change with frequency.
-        sfg.populate_virtual(0.0, &virt_comp, &SIM);
-        for i in 0..n {
-            let freq = i as f64 * step;
-            sfg.populate_components(freq, &list, &SIM);
-            sparams.insert(
-                OrderedFloat(freq),
-                ports
-                    .iter()
-                    .map(|porta| {
-                        ports
-                            .iter()
-                            .map(|portb| sfg.masons_rule(*portb, *porta, true))
-                            .collect()
-                    })
-                    .collect(),
-            );
-        }
+        sfg.populate(SIM.design_freq / 2.0, &list, &virt_comp, &SIM);
+        (0..n)
+            .into_par_iter()
+            .map(|i| {
+                let freq = i as f64 * step;
+                let mut cloned = sfg.clone();
+                cloned.populate_components(freq, &list, &SIM);
+                (
+                    OrderedFloat(freq),
+                    ports
+                        .iter()
+                        .map(|porta| {
+                            ports
+                                .iter()
+                                .map(|portb| cloned.masons_rule(*portb, *porta, true))
+                                .collect::<Vec<_>>()
+                        })
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .fold(None, |_, (f, par)| sparams.insert(f, par));
         let file =
             File::create("test/data/sfg/branchline.json").expect("Failed to open test data file.");
         serde_json::to_writer_pretty(file, &sparams).expect("Unable to serialize s-parameters.");

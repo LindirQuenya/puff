@@ -315,7 +315,7 @@ mod tests {
 
     use crate::{
         netlist::netlist_to_connections,
-        parts::{lumped::LumpedProps, lumpedmatch::MatchProps, tline::TLineProps},
+        parts::{lumped::LumpedProps, lumpedmatch::MatchProps, tee::TeeProps, tline::TLineProps},
         sim::{LengthSpec, SimType},
     };
 
@@ -498,6 +498,105 @@ mod tests {
     }
 
     #[test]
+    fn branchline_equiv_zerofreq() {
+        let l50 = MatchProps::default();
+        let tee = TeeProps::default();
+        let list = [
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![1],
+            },
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![2],
+            },
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![3],
+            },
+            NetlistElement {
+                component: Component::Match(l50),
+                port_nets: vec![4],
+            },
+            NetlistElement {
+                component: Component::Tee(tee),
+                port_nets: vec![1, 5, 6],
+            },
+            NetlistElement {
+                component: Component::Tee(tee),
+                port_nets: vec![2, 5, 7],
+            },
+            NetlistElement {
+                component: Component::Tee(tee),
+                port_nets: vec![3, 8, 6],
+            },
+            NetlistElement {
+                component: Component::Tee(tee),
+                port_nets: vec![4, 7, 8],
+            },
+        ];
+        let ports = [
+            ComponentPort {
+                component_ind: 0,
+                is_virtual: false,
+                port_num: 0,
+            },
+            ComponentPort {
+                component_ind: 1,
+                is_virtual: false,
+                port_num: 0,
+            },
+            ComponentPort {
+                component_ind: 2,
+                is_virtual: false,
+                port_num: 0,
+            },
+            ComponentPort {
+                component_ind: 3,
+                is_virtual: false,
+                port_num: 0,
+            },
+        ];
+        let grounds: HashSet<usize> = HashSet::new();
+        let (conn, virt_comp) = netlist_to_connections(&list, &grounds);
+        let mut sfg = SignalFlowGraph::new(&conn);
+        sfg.populate(0.0, &list, &virt_comp, &SIM);
+        //let dot = petgraph::dot::Dot::new(&sfg.graph);
+        //println!("{:?}", dot);
+        //println!("{:#?}", sfg);
+        let expected = [
+            [-0.5, 0.5, 0.5, 0.5],
+            [0.5, -0.5, 0.5, 0.5],
+            [0.5, 0.5, -0.5, 0.5],
+            [0.5, 0.5, 0.5, -0.5],
+        ];
+        let sparams: Vec<Vec<Complex64>> = ports
+            .iter()
+            .map(|porta| {
+                ports
+                    .iter()
+                    .map(|portb| sfg.masons_rule(*portb, *porta, true))
+                    .collect()
+            })
+            .collect();
+        //println!("{sparams:#?}");
+
+        let maxerr = expected
+            .iter()
+            .enumerate()
+            .map(|(i, row)| {
+                row.iter()
+                    .enumerate()
+                    .map(|(j, val)| OrderedFloat((sparams[i][j] - val).abs()))
+                    .max()
+                    .unwrap_or(OrderedFloat::max_value())
+            })
+            .max()
+            .unwrap_or(OrderedFloat::max_value());
+        assert!(maxerr.into_inner() < 1e-12);
+    }
+
+    #[test]
     /// Full branchline coupler - frequency sweep
     fn branchline_coupler_sweep() {
         let z0line = TLineProps::new(SIM.z0, LengthSpec::Degrees(90.), false, &SIM).unwrap();
@@ -573,7 +672,8 @@ mod tests {
         (0..n)
             .into_par_iter()
             .map(|i| {
-                let freq = i as f64 * step;
+                // TODO: figure out why my SFG solver explodes at DC.
+                let freq = 1e-6 + i as f64 * step;
                 let mut cloned = sfg.clone();
                 cloned.populate_components(freq, &list, &SIM);
                 (

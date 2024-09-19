@@ -4,12 +4,13 @@ import {
   PartDimension,
   PartDimensions,
   PartsStr,
+  SelectionEvent,
   TLineDimensions,
   ValidatedPart,
 } from "./types";
 import { invoke } from "@tauri-apps/api/core";
 import { parse_tline } from "./tline";
-import { listen } from "@tauri-apps/api/event";
+import { listen, TauriEvent } from "@tauri-apps/api/event";
 
 const partNames = "abcdefghijklmnopqr";
 
@@ -50,6 +51,7 @@ export function Parts(props: PartsProps) {
       {},
     ) as PartsStr;
   });
+  const [selectedPart, setSelectedPart] = useState(undefined as keyof PartsStr | undefined);
   async function getDim(c: keyof PartsStr): Promise<PartDimension | undefined> {
     let newdim: PartDimension | undefined = undefined;
     // TODO handle errors from invoke.
@@ -80,6 +82,14 @@ export function Parts(props: PartsProps) {
       await Promise.all(
         [...partNames].map((c) => refreshDim(c as keyof PartsStr)),
       );
+    });
+    return () => {
+      unlisten.then((ul) => ul());
+    };
+  }, [parts]);
+  useEffect(() => {
+    const unlisten = listen("part-selection", (e) => {
+      setSelectedPart((e.payload as SelectionEvent).selection);
     });
     return () => {
       unlisten.then((ul) => ul());
@@ -126,7 +136,7 @@ export function Parts(props: PartsProps) {
             if (row.trim().length !== 0) {
               if (parts[c].parsed) {
                 // TODO: selection from F1.
-                if (false) {
+                if (selectedPart === c) {
                   inputclass = "selected";
                 } else {
                   inputclass = "active";

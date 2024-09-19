@@ -12,6 +12,7 @@ import { Plot } from "./Plot";
 export default function App() {
   const [message, setMessage] = useState(["", "", ""]);
   const [dims, setDims] = useState({} as PartDimensions);
+  const [boardDims, setBoardDims] = useState(12e-3);
   return (
     <div id="mainrow" className="row">
       <div id="textcol" className="column">
@@ -24,7 +25,7 @@ export default function App() {
       </div>
       <div id="graphcol" className="column">
         <div id="layoutsmithrow" className="row">
-          <Layout/>
+          <Layout boardSize={boardDims} dims={dims}/>
           <div id="smith">
             <a>smith</a>
           </div>

@@ -106,3 +106,7 @@ export type PartDimensions = {
 };
 
 export type PartDimension = { kind: "t"; dim: TLineDimensions };
+
+export type SelectionEvent = {
+  selection: keyof PartsStr | undefined
+};

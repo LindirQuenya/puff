@@ -71,9 +71,6 @@ export function Layout(props: LayoutProps) {
 		const parent = getComputedStyle(document.getElementById("layout")!);
 		if (context) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
-//			context.fillStyle=parent.backgroundColor;
-//			console.log(parent.backgroundColor);
-//			context.fillRect(0, 0, canvas.width, canvas.height);
 			const [x, y] = [Math.round(canvas.width * cursorXY[0]), Math.round(canvas.height * cursorXY[1])];
 			context.beginPath();
 			context.moveTo(x - 10, y);

@@ -18,9 +18,6 @@ impl Display for SnPFile {
                 };
                 write!(f, " {} {}", x1, x2)?;
             }
-            if let Some(comment) = &self.comments[i] {
-                write!(f, " !{}", comment)?;
-            }
             writeln!(f)?;
         }
         Ok(())

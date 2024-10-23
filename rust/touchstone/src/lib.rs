@@ -1,7 +1,9 @@
 use std::num::ParseFloatError;
 
+use lazy_static::lazy_static;
 use num::complex::Complex64;
 use options::FormatOptions;
+use regex::Regex;
 use thiserror::Error;
 
 pub mod options;
@@ -35,4 +37,15 @@ pub struct SnPFile {
 pub struct DataEntry {
     freq: f64,
     data: Vec<Complex64>,
+}
+
+/// Extracts the N from any string ending in "sNp".
+pub fn file_extension_guess_nports(extension: &str) -> Option<usize> {
+    lazy_static! {
+        static ref RE_SNP: Regex = Regex::new(r"(?i)s(\d+)p$").expect("Regex failed to compile?");
+    }
+    RE_SNP
+        .captures(extension)?
+        .get(1)
+        .and_then(|m| m.as_str().parse().ok())
 }

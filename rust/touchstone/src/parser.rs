@@ -1,6 +1,6 @@
-use std::{io::BufRead, str::FromStr};
+use std::io::BufRead;
 
-use num::{complex::Complex64, Integer};
+use num::complex::Complex64;
 
 use crate::{
     options::{FormatOptions, NumberFormat},
@@ -35,112 +35,92 @@ enum ChunkType {
     Data(f64),
 }
 
-fn to_chunks(line: &str) -> impl IntoIterator {
-    
+fn to_chunks(line: &str) -> Result<Vec<ChunkType>, ParseSnPError> {
+    let trimmed = line.trim();
+    match trimmed.chars().nth(1) {
+        // If it has only one non-space character, I'll consider it blank.
+        None => Ok(Vec::new()),
+        // Otherwise, let's check the starting character.
+        Some(_) => match trimmed.chars().next() {
+            None => Ok(Vec::new()),
+            // Option lines start with '#'
+            Some('#') => Ok(vec![ChunkType::Options(trimmed.parse()?)]),
+            // And comments start with '!'
+            Some('!') => Ok(Vec::new()),
+            // The rest is data.
+            _ => chunk_data_line(trimmed),
+        },
+    }
 }
 
-// TODO multi-line parsing for >2 port?
-pub fn parse_data_line(line: &str, nports: usize) -> Result<Option<ParsedData>, ParseSnPError> {
-    if nports > 2 {
-        todo!("Support multi-line parsing");
-    }
+fn chunk_data_line(line: &str) -> Result<Vec<ChunkType>, ParseSnPError> {
     let mut commentsplit = line.trim().split('!');
-    let mut datasplit = match commentsplit.next() {
+    let datasplit = match commentsplit.next() {
         Some(c) => c.split_whitespace(),
         // Empty line.
         None => {
-            return Ok(None);
+            return Ok(Vec::new());
         }
     };
-    let freq = match datasplit.next() {
-        Some(f) => f64::from_str(f)?,
-        None => {
-            // Comment line that wasn't caught by a previous filter? Ignore.
-            return Ok(None);
-        }
-    };
-    let parsed_floats: Vec<f64> = datasplit
-        .map(|elem| elem.parse())
-        .collect::<Result<Vec<_>, _>>()?;
-    if !parsed_floats.len().is_even() {
-        return Err(ParseSnPError::OddDataColumns);
-    }
-    Ok(Some(ParsedData {
-        freq,
-        parsed_floats,
-    }))
+    let floats: Result<Vec<_>, _> = datasplit
+        .map(|elem| elem.parse::<f64>().map(ChunkType::Data))
+        .collect();
+    Ok(floats?)
 }
 
-pub enum LineType {
-    Blank,
-    Options(FormatOptions),
-    Data(ParsedData),
-}
-
-impl LineType {
-    fn from_str(s: &str, rest: &mut impl BufRead, nports: usize) -> Result<Self, ParseSnPError> {
-        let trimmed = s.trim();
-        match trimmed.chars().nth(1) {
-            // If it has only one non-space character, I'll consider it blank.
-            None => Ok(Self::Blank),
-            // Otherwise, let's check the starting character.
-            Some(_) => match trimmed.chars().nth(0) {
-                None => Ok(Self::Blank),
-                // Option lines start with '#'
-                Some('#') => Ok(Self::Options(trimmed.parse()?)),
-                // And comments start with '!'
-                Some('!') => Ok(Self::Blank),
-                // The rest is data.
-                _ => match parse_data_line(trimmed, rest, nports)? {
-                    None => Ok(Self::Blank),
-                    Some(d) => Ok(Self::Data(d)),
-                },
-            },
-        }
-    }
-}
-
-pub fn parse_file<T>(mut file: impl BufRead, nports: usize) -> Result<SnPFile, ParseSnPError>
-{
+pub fn parse_file(file: impl BufRead, nports: usize) -> Result<SnPFile, ParseSnPError> {
     let mut options: Option<FormatOptions> = None;
-    let mut comments: Vec<Option<String>> = Vec::new();
     let mut freq: Vec<f64> = Vec::new();
     let mut data: Vec<Vec<Complex64>> = Vec::new();
-    let mut buf = String::new();
+    let mut float_count = 0;
+    let mut temp_freq = 0.0;
+    let mut float_vec: Vec<f64> = vec![0.0; 2 * nports.pow(2)];
+    for line_data in file
+        .lines()
+        .map(|line| to_chunks(&line.expect("Broken input stream?")))
+    {
+        for chunk in line_data? {
+            match chunk {
+                ChunkType::Options(opt) => {
+                    if options.is_none() {
+                        options = Some(opt);
+                    }
+                }
+                ChunkType::Data(f) => {
+                    if float_count == 0 {
+                        temp_freq = f
+                    } else {
+                        float_vec[float_count - 1] = f;
+                    }
+                    float_count += 1;
+                    if float_count == 2 * nports.pow(2) + 1 {
+                        float_count = 0;
+                        let entry = interpret(
+                            ParsedData {
+                                freq: temp_freq,
+                                parsed_floats: float_vec.clone(),
+                            },
+                            &options.ok_or(ParseSnPError::DataBeforeOptions)?,
+                        );
+                        freq.push(entry.freq);
 
-    while let Ok(n) = file.read_line(&mut buf) {
-        if n == 0 {
-            break;
-        }
-        match LineType::from_str(&buf, &mut file, nports)? {
-            LineType::Options(opt) => {
-                if options.is_none() {
-                    options = Some(opt);
+                        if data.is_empty() {
+                            data = vec![Vec::new(); entry.data.len()];
+                        }
+                        if data.len() != entry.data.len() {
+                            return Err(ParseSnPError::InconsistentNumParams);
+                        }
+                        for i in 0..entry.data.len() {
+                            data[i].push(entry.data[i]);
+                        }
+                    }
                 }
-            }
-            LineType::Data(parsed) => {
-                let interp = interpret(parsed, &options.ok_or(ParseSnPError::DataBeforeOptions)?);
-                freq.push(interp.freq);
-                comments.push(interp.comment);
-                if data.is_empty() {
-                    data = vec![Vec::new(); interp.data.len()];
-                }
-                if data.len() != interp.data.len() {
-                    return Err(ParseSnPError::InconsistentNumParams);
-                }
-                for i in 0..interp.data.len() {
-                    data[i].push(interp.data[i]);
-                }
-            }
-            _ => {
-                // Ignore.
             }
         }
     }
     Ok(SnPFile {
         options: options.ok_or(ParseSnPError::EmptyFile)?,
         freq,
-        comments,
         data,
     })
 }

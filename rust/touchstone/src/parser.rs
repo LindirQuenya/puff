@@ -3,6 +3,7 @@ use std::io::BufRead;
 use num::complex::Complex64;
 
 use crate::{
+    into_params,
     options::{FormatOptions, NumberFormat},
     DataEntry, ParseSnPError, SnPFile,
 };
@@ -12,7 +13,7 @@ pub struct ParsedData {
     parsed_floats: Vec<f64>,
 }
 
-pub fn interpret(parsed: ParsedData, options: &FormatOptions) -> DataEntry {
+fn interpret(parsed: ParsedData, options: &FormatOptions) -> DataEntry {
     let data: Vec<Complex64> = parsed
         .parsed_floats
         .chunks_exact(2)
@@ -70,8 +71,7 @@ fn chunk_data_line(line: &str) -> Result<Vec<ChunkType>, ParseSnPError> {
 
 pub fn parse_file(file: impl BufRead, nports: usize) -> Result<SnPFile, ParseSnPError> {
     let mut options: Option<FormatOptions> = None;
-    let mut freq: Vec<f64> = Vec::new();
-    let mut data: Vec<Vec<Complex64>> = Vec::new();
+    let mut data: Vec<DataEntry> = Vec::new();
     let mut float_count = 0;
     let mut temp_freq = 0.0;
     let mut float_vec: Vec<f64> = vec![0.0; 2 * nports.pow(2)];
@@ -93,7 +93,8 @@ pub fn parse_file(file: impl BufRead, nports: usize) -> Result<SnPFile, ParseSnP
                         float_vec[float_count - 1] = f;
                     }
                     float_count += 1;
-                    if float_count == 2 * nports.pow(2) + 1 {
+                    // len+1 because the first float is the frequency.
+                    if float_count == float_vec.len() + 1 {
                         float_count = 0;
                         let entry = interpret(
                             ParsedData {
@@ -102,25 +103,17 @@ pub fn parse_file(file: impl BufRead, nports: usize) -> Result<SnPFile, ParseSnP
                             },
                             &options.ok_or(ParseSnPError::DataBeforeOptions)?,
                         );
-                        freq.push(entry.freq);
-
-                        if data.is_empty() {
-                            data = vec![Vec::new(); entry.data.len()];
-                        }
-                        if data.len() != entry.data.len() {
-                            return Err(ParseSnPError::InconsistentNumParams);
-                        }
-                        for i in 0..entry.data.len() {
-                            data[i].push(entry.data[i]);
-                        }
+                        data.push(entry);
                     }
                 }
             }
         }
     }
+    if float_count != 0 {
+        return Err(ParseSnPError::IncompleteColumnOrWrongNports);
+    }
     Ok(SnPFile {
         options: options.ok_or(ParseSnPError::EmptyFile)?,
-        freq,
-        data,
+        params: into_params(data),
     })
 }

@@ -1,8 +1,9 @@
-use std::num::ParseFloatError;
+use std::{collections::BTreeMap, num::ParseFloatError};
 
 use lazy_static::lazy_static;
-use num::complex::Complex64;
+use num::{complex::Complex64, integer::Roots};
 use options::FormatOptions;
+use ordered_float::OrderedFloat;
 use regex::Regex;
 use thiserror::Error;
 
@@ -18,25 +19,41 @@ pub enum ParseSnPError {
     MalformedOptions,
     #[error("empty options line")]
     EmptyOptions,
-    #[error("missing angle/imaginary; odd number of data columns")]
-    OddDataColumns,
     #[error("data lines before options line")]
     DataBeforeOptions,
-    #[error("inconsistent number of parameters")]
-    InconsistentNumParams,
+    #[error("incomplete data column or incorrect number of ports")]
+    IncompleteColumnOrWrongNports,
     #[error("empty file")]
     EmptyFile,
 }
 
 pub struct SnPFile {
     pub options: FormatOptions,
-    pub freq: Vec<f64>,
-    pub data: Vec<Vec<Complex64>>,
+    pub params: Params,
 }
 
-pub struct DataEntry {
+struct DataEntry {
     freq: f64,
     data: Vec<Complex64>,
+}
+
+pub type Params = BTreeMap<OrderedFloat<f64>, Vec<Vec<Complex64>>>;
+
+fn into_params(data: Vec<DataEntry>) -> Params {
+    let mut params = Params::new();
+    for pt in data {
+        let nparams = pt.data.len().sqrt();
+        let mut param_array: Vec<Vec<Complex64>> = vec![vec![Complex64::ZERO; nparams]; nparams];
+        for i in 0..nparams.pow(2) {
+            param_array[i / nparams][i % nparams] = pt.data[i];
+        }
+        // S21 and S12 are swapped for two-ports and only two-ports.
+        if nparams == 2 {
+            param_array.swap(1, 2);
+        }
+        params.insert(pt.freq.into(), param_array);
+    }
+    params
 }
 
 /// Extracts the N from any string ending in "sNp".

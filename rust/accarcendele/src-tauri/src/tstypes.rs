@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use enerdhil::{parts::tline::TLineDimensions, sim::LengthSpec};
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -36,6 +38,12 @@ pub struct TLine {
     pub impedance: Impedance,
     pub length: Length,
     pub correction: Length,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub struct SparamDev {
+    pub filename: PathBuf,
+    pub nports: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]

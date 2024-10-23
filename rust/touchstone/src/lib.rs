@@ -30,11 +30,9 @@ pub struct SnPFile {
     pub options: FormatOptions,
     pub freq: Vec<f64>,
     pub data: Vec<Vec<Complex64>>,
-    pub comments: Vec<Option<String>>,
 }
 
 pub struct DataEntry {
     freq: f64,
     data: Vec<Complex64>,
-    comment: Option<String>,
 }

@@ -10,7 +10,6 @@ use crate::{
 pub struct ParsedData {
     freq: f64,
     parsed_floats: Vec<f64>,
-    comment: Option<String>,
 }
 
 pub fn interpret(parsed: ParsedData, options: &FormatOptions) -> DataEntry {
@@ -28,12 +27,23 @@ pub fn interpret(parsed: ParsedData, options: &FormatOptions) -> DataEntry {
     DataEntry {
         freq: parsed.freq * Into::<f64>::into(options.freq_prefix),
         data,
-        comment: parsed.comment,
     }
 }
 
+enum ChunkType {
+    Options(FormatOptions),
+    Data(f64),
+}
+
+fn to_chunks(line: &str) -> impl IntoIterator {
+    
+}
+
 // TODO multi-line parsing for >2 port?
-pub fn parse_data_line(line: &str) -> Result<Option<ParsedData>, ParseSnPError> {
+pub fn parse_data_line(line: &str, nports: usize) -> Result<Option<ParsedData>, ParseSnPError> {
+    if nports > 2 {
+        todo!("Support multi-line parsing");
+    }
     let mut commentsplit = line.trim().split('!');
     let mut datasplit = match commentsplit.next() {
         Some(c) => c.split_whitespace(),
@@ -42,7 +52,6 @@ pub fn parse_data_line(line: &str) -> Result<Option<ParsedData>, ParseSnPError> 
             return Ok(None);
         }
     };
-    let comment = commentsplit.next().map(|s| s.to_owned());
     let freq = match datasplit.next() {
         Some(f) => f64::from_str(f)?,
         None => {
@@ -59,21 +68,17 @@ pub fn parse_data_line(line: &str) -> Result<Option<ParsedData>, ParseSnPError> 
     Ok(Some(ParsedData {
         freq,
         parsed_floats,
-        comment,
     }))
 }
 
 pub enum LineType {
     Blank,
-    Comment(String),
     Options(FormatOptions),
     Data(ParsedData),
 }
 
-impl FromStr for LineType {
-    type Err = ParseSnPError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl LineType {
+    fn from_str(s: &str, rest: &mut impl BufRead, nports: usize) -> Result<Self, ParseSnPError> {
         let trimmed = s.trim();
         match trimmed.chars().nth(1) {
             // If it has only one non-space character, I'll consider it blank.
@@ -84,9 +89,9 @@ impl FromStr for LineType {
                 // Option lines start with '#'
                 Some('#') => Ok(Self::Options(trimmed.parse()?)),
                 // And comments start with '!'
-                Some('!') => Ok(Self::Comment(trimmed[1..].to_owned())),
+                Some('!') => Ok(Self::Blank),
                 // The rest is data.
-                _ => match parse_data_line(trimmed)? {
+                _ => match parse_data_line(trimmed, rest, nports)? {
                     None => Ok(Self::Blank),
                     Some(d) => Ok(Self::Data(d)),
                 },
@@ -95,17 +100,19 @@ impl FromStr for LineType {
     }
 }
 
-pub fn parse_file<T>(file: T) -> Result<SnPFile, ParseSnPError>
-where
-    T: BufRead,
+pub fn parse_file<T>(mut file: impl BufRead, nports: usize) -> Result<SnPFile, ParseSnPError>
 {
     let mut options: Option<FormatOptions> = None;
     let mut comments: Vec<Option<String>> = Vec::new();
     let mut freq: Vec<f64> = Vec::new();
     let mut data: Vec<Vec<Complex64>> = Vec::new();
+    let mut buf = String::new();
 
-    for line in file.lines().map(|l| l.unwrap()) {
-        match line.parse::<LineType>()? {
+    while let Ok(n) = file.read_line(&mut buf) {
+        if n == 0 {
+            break;
+        }
+        match LineType::from_str(&buf, &mut file, nports)? {
             LineType::Options(opt) => {
                 if options.is_none() {
                     options = Some(opt);

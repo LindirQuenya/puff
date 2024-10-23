@@ -4,7 +4,7 @@
 /// Various types that will be sent to/from TypeScript
 mod tstypes;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::File};
 
 use enerdhil::{
     constraint::{validate, Constraints},
@@ -15,7 +15,7 @@ use enerdhil::{
 };
 use parking_lot::{Mutex, RwLock};
 use tauri::{Emitter, Manager, State, Window};
-use tstypes::{ConfigUpdate, TLine, TLineDimensionsMeters};
+use tstypes::{ConfigUpdate, SparamDev, TLine, TLineDimensionsMeters};
 
 struct Config {
     sim: SimProps,
@@ -56,6 +56,20 @@ fn add_transmission_line(
         map.insert(index, Component::TLine(line));
     }
     Ok(dimensions.into())
+}
+
+#[tauri::command]
+fn add_sparam_device(
+    index: char,
+    desc: SparamDev,
+    parts: State<PartMap>,
+    simstate: State<SimSettings>,
+) -> Result<TLineDimensionsMeters, String> {
+    let f = match File::open(desc.filename) {
+        Ok(f) => f,
+        Err(e) => {return Err(e.to_string());}
+    };j9;8
+    todo!();
 }
 
 #[tauri::command]

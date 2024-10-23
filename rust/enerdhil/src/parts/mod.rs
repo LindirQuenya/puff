@@ -3,6 +3,7 @@ use lumpedmatch::MatchProps;
 use num::complex::Complex64;
 use open::OpenProps;
 use short::ShortProps;
+use sparams::SparamDevice;
 use tee::TeeProps;
 use tline::TLineProps;
 
@@ -14,6 +15,7 @@ pub mod open;
 pub mod short;
 pub mod tee;
 pub mod tline;
+pub mod sparams;
 
 // TODO: right now this cannot be extended with custom components by the user.
 // We should allow them to define their own components and use them.
@@ -27,6 +29,7 @@ pub enum Component {
     Tee(TeeProps),
     Lumped(LumpedProps),
     Match(MatchProps),
+    SParams(SparamDevice),
 }
 
 impl Component {
@@ -62,6 +65,8 @@ impl Component {
                 .into_iter()
                 .map(|e| e.to_vec())
                 .collect(),
+            Component::SParams(s) => s
+            .simulate(freq, sim)
         }
     }
     pub fn get_port_num(&self) -> usize {
@@ -72,6 +77,7 @@ impl Component {
             Component::Tee(t) => t.get_port_num(),
             Component::Lumped(l) => l.get_port_num(),
             Component::Match(m) => m.get_port_num(),
+            Component::SParams(s) => s.get_port_num(),
         }
     }
 }

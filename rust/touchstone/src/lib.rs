@@ -49,7 +49,9 @@ fn into_params(data: Vec<DataEntry>) -> Params {
         }
         // S21 and S12 are swapped for two-ports and only two-ports.
         if nparams == 2 {
-            param_array.swap(1, 2);
+            let temp = param_array[0][1];
+            param_array[0][1] = param_array[1][0];
+            param_array[1][0] = temp;
         }
         params.insert(pt.freq.into(), param_array);
     }

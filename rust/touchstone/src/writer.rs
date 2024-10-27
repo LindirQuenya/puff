@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use num::{complex::ComplexFloat, integer::Roots};
+use num::complex::ComplexFloat;
 
 use crate::{options::NumberFormat, SnPFile};
 
@@ -9,7 +9,7 @@ impl Display for SnPFile {
         writeln!(f, "{}", self.options)?;
         for (freq, params) in self.params.iter() {
             write!(f, "{}", freq / Into::<f64>::into(self.options.freq_prefix))?;
-            let nparams = params.len().sqrt();
+            let nparams = params.len();
             let order = if nparams == 2 {
                 // 2-port columns are out of order.
                 vec![0, 2, 1, 3]

@@ -52,6 +52,12 @@ pub struct TLineDimensionsMeters {
     pub p_width: f64,
 }
 
+pub struct TriangleDimensionsMeters {
+    pub base: f64,
+    pub height: f64,
+    pub port_heights: Vec<f64>,
+}
+
 #[derive(Serialize_repr, Deserialize_repr, Clone, Copy)]
 #[repr(u8)]
 pub enum SimType {
@@ -107,3 +113,4 @@ impl Into<TLineDimensionsMeters> for TLineDimensions {
         }
     }
 }
+

@@ -15,7 +15,7 @@ use enerdhil::{
 };
 use parking_lot::{Mutex, RwLock};
 use tauri::{Emitter, Manager, State, Window};
-use tstypes::{ConfigUpdate, SparamDev, TLine, TLineDimensionsMeters};
+use tstypes::{ConfigUpdate, SparamDev, TLine, TLineDimensionsMeters, TriangleDimensionsMeters};
 
 struct Config {
     sim: SimProps,
@@ -64,12 +64,24 @@ fn add_sparam_device(
     desc: SparamDev,
     parts: State<PartMap>,
     simstate: State<SimSettings>,
-) -> Result<TLineDimensionsMeters, String> {
+) -> Result<TriangleDimensionsMeters, String> {
     let f = match File::open(desc.filename) {
         Ok(f) => f,
         Err(e) => {return Err(e.to_string());}
-    };j9;8
-    todo!();
+    };
+    let sparams = touchstone::parser::parse_file(f, desc.nports).map_err(|e| e.to_string())?;
+    let device = SParamDevice::new(sparams.params);
+    {
+        let mut map = parts.0.lock();
+        map.insert(index, Component::SParams(device));
+    }
+    let base = 0.05*(desc.nports+1)*simstate.0.read().constr.board_dim.0;
+    let height = 3.0.sqrt()*base/2.0;
+    Ok(TriangleDimensionsMeters {
+        base,
+        height,
+        port_heights: (0..desc.nports).map(|n| (n+1)*height/(desc.nports+1)).collect(),
+    })
 }
 
 #[tauri::command]

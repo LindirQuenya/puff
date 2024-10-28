@@ -13,9 +13,9 @@ pub mod lumped;
 pub mod lumpedmatch;
 pub mod open;
 pub mod short;
+pub mod sparams;
 pub mod tee;
 pub mod tline;
-pub mod sparams;
 
 // TODO: right now this cannot be extended with custom components by the user.
 // We should allow them to define their own components and use them.
@@ -65,8 +65,7 @@ impl Component {
                 .into_iter()
                 .map(|e| e.to_vec())
                 .collect(),
-            Component::SParams(s) => s
-            .simulate(freq, sim)
+            Component::SParams(s) => s.simulate(freq, sim),
         }
     }
     pub fn get_port_num(&self) -> usize {

@@ -6,14 +6,14 @@ import {
   LengthUnit,
 } from "./types";
 
-export const TLINE_LABEL = /^t[a-zA-Z]*\s*/;
-export const POSITIVE_FLOAT_CHUNK =
-  /^(\+?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*([fpnumckMGTP]?)\s*/;
-export const IMPEDANCE_UNIT = /^([zZyYsSoOΩ])\s*/;
+export const TLINE_LABEL = /^t[a-z]*\s*/i;
+export const SPARAMDEV_LABEL = /^d[a-z]*\s*/i;
+export const IMPEDANCE_UNIT = /^([zysoΩ])\s*/i;
 // TODO: support manhattan-length components?
 export const LENGTH_UNIT = /^([mhdD°])\s*/;
 export const GENERIC_FLOAT_CHUNK =
   /^([+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*([fpnumckMGTP]?)\s*/;
+export const INTEGER_CHUNK = /^([+-]?\d+)\s+/;
 
 export function prefix_to_scale(s: string): number {
   const dict: Dictionary<number> = {
@@ -75,14 +75,36 @@ export function extract_float(
 ): [number, number] | null {
   const match = s
     .slice(start)
-    .match(allowNegative ? GENERIC_FLOAT_CHUNK : POSITIVE_FLOAT_CHUNK);
+    .match(GENERIC_FLOAT_CHUNK);
   if (!match) {
     return null;
   }
   const value = parseFloat(match[1]);
+  if (value < 0 && !allowNegative) {
+    return null;
+  }
   const exponent = prefix_to_scale(match[2]);
   const newStart = start + match[0].length;
   return [value * 10 ** exponent, newStart];
+}
+
+export function extract_integer(
+  s: string,
+  start: number,
+  allowNegative?: boolean,
+): [number, number] | null {
+  const match = s
+    .slice(start)
+    .match(INTEGER_CHUNK);
+  if (!match) {
+    return null;
+  }
+  const value = parseInt(match[1]);
+  if (value < 0 && !allowNegative) {
+    return null;
+  }
+  const newStart = start + match[0].length;
+  return [value, newStart];
 }
 
 export function extract_impedance(

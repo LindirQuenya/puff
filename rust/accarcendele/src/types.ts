@@ -67,13 +67,25 @@ export type TLineDimensions = {
   p_width: number;
 };
 
+export type SparamDev = {
+  nports: number;
+  filename: string;
+};
+
+export type TriangleDimensions = {
+  base: number;
+  height: number;
+  port_heights: number[];
+};
+
 export type Transformer = {
   ratio: number;
 };
 
 export type Part =
   | { kind: "t"; part: TLine }
-  | { kind: "x"; part: Transformer };
+  | { kind: "x"; part: Transformer}
+  | { kind: "d"; part: SparamDev};
 
 export type ValidatedPart = {
   spec: string;
@@ -105,7 +117,7 @@ export type PartDimensions = {
   [Property in keyof PartsStr]: PartDimension | undefined;
 };
 
-export type PartDimension = { kind: "t"; dim: TLineDimensions };
+export type PartDimension = { kind: "t"; dim: TLineDimensions } | {kind: "d"; dim: TriangleDimensions};
 
 export type SelectionEvent = {
   selection: keyof PartsStr | undefined

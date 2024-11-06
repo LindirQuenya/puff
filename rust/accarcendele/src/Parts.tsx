@@ -6,11 +6,13 @@ import {
   PartsStr,
   SelectionEvent,
   TLineDimensions,
+  TriangleDimensions,
   ValidatedPart,
 } from "./types";
 import { invoke } from "@tauri-apps/api/core";
-import { parse_tline } from "./tline";
-import { listen, TauriEvent } from "@tauri-apps/api/event";
+import { parse_tline } from "./parts/tline";
+import { listen } from "@tauri-apps/api/event";
+import { parse_sparamdev } from "./parts/sparamdev";
 
 const partNames = "abcdefghijklmnopqr";
 
@@ -23,6 +25,11 @@ function validate_part(s: string): Part | null {
       const part = parse_tline(s);
       if (!part) return null;
       return { kind: "t", part };
+    }
+    case "d": {
+      const part = parse_sparamdev(s);
+      if (!part) return null;
+      return { kind: "d", part };
     }
   }
   return null;
@@ -60,9 +67,17 @@ export function Parts(props: PartsProps) {
         case "t": {
           const dim = (await invoke("add_transmission_line", {
             index: c,
-            linedesc: parts[c].parsed.part,
+            desc: parts[c].parsed.part,
           })) as TLineDimensions;
           newdim = { kind: "t", dim };
+          break;
+        }
+        case "d": {
+          const dim = (await invoke("add_sparam_device", {
+            index: c,
+            desc: parts[c].parsed.part,
+          })) as TriangleDimensions;
+          newdim = { kind: "d", dim };
           break;
         }
       }

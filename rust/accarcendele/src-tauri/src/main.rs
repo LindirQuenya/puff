@@ -30,16 +30,16 @@ struct PartMap(Mutex<HashMap<char, Component>>);
 #[tauri::command]
 fn add_transmission_line(
     index: char,
-    linedesc: TLine,
+    desc: TLine,
     parts: State<PartMap>,
     simstate: State<SimSettings>,
 ) -> Result<TLineDimensionsMeters, String> {
     let (line, dimensions) = {
         let sim = &simstate.0.read();
-        let zed = linedesc.impedance.to_ohms(sim.sim.z0);
-        let line = TLineProps::new(zed, linedesc.length.into(), false, &sim.sim)
+        let zed = desc.impedance.to_ohms(sim.sim.z0);
+        let line = TLineProps::new(zed, desc.length.into(), false, &sim.sim)
             .map_err(|e| e.to_string())?;
-        let corr = line.to_mm(&linedesc.correction.into(), &sim.sim);
+        let corr = line.to_mm(&desc.correction.into(), &sim.sim);
         let mut dimensions = line.get_dimensions().to_owned();
         dimensions.p_len += corr;
         if sim.manhattan {
@@ -67,7 +67,9 @@ fn add_sparam_device(
 ) -> Result<TriangleDimensionsMeters, String> {
     let f = match File::open(desc.filename) {
         Ok(f) => f,
-        Err(e) => {return Err(e.to_string());}
+        Err(e) => {
+            return Err(e.to_string());
+        }
     };
     let sparams = touchstone::parser::parse_file(f, desc.nports).map_err(|e| e.to_string())?;
     let device = SParamDevice::new(sparams.params);
@@ -75,12 +77,14 @@ fn add_sparam_device(
         let mut map = parts.0.lock();
         map.insert(index, Component::SParams(device));
     }
-    let base = 0.05*(desc.nports+1)*simstate.0.read().constr.board_dim.0;
-    let height = 3.0.sqrt()*base/2.0;
+    let base = 0.05 * (desc.nports + 1) * simstate.0.read().constr.board_dim.0;
+    let height = 3.0.sqrt() * base / 2.0;
     Ok(TriangleDimensionsMeters {
         base,
         height,
-        port_heights: (0..desc.nports).map(|n| (n+1)*height/(desc.nports+1)).collect(),
+        port_heights: (0..desc.nports)
+            .map(|n| (n + 1) * height / (desc.nports + 1))
+            .collect(),
     })
 }
 
@@ -126,6 +130,7 @@ fn main() {
         manhattan: false,
     };
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .manage(PartMap(Mutex::new(HashMap::new())))
         .manage(SimSettings(RwLock::new(config)))
         .setup(|app| {

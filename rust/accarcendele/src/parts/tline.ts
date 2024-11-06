@@ -1,5 +1,5 @@
-import { extract_impedance, extract_length, TLINE_LABEL } from "./regex";
-import { LengthUnit, TLine } from "./types";
+import { extract_impedance, extract_length, TLINE_LABEL } from "../regex";
+import { LengthUnit, TLine } from "../types";
 
 // Returns null if invalid.
 export function parse_tline(s: string): TLine | null {

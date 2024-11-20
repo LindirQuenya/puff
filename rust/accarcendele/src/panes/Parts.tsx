@@ -8,11 +8,11 @@ import {
   TLineDimensions,
   TriangleDimensions,
   ValidatedPart,
-} from "./types";
+} from "../types";
 import { invoke } from "@tauri-apps/api/core";
-import { parse_tline } from "./parts/tline";
+import { parse_tline } from "../parts/tline";
 import { listen } from "@tauri-apps/api/event";
-import { parse_sparamdev } from "./parts/sparamdev";
+import { parse_sparamdev } from "../parts/sparamdev";
 
 const partNames = "abcdefghijklmnopqr";
 

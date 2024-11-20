@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Config } from "./Config";
 import { Parts } from "./Parts";
-import "./main.css";
+import "../styles/main.css";
 import { Message } from "./Message";
-import { PartDimensions, PartsStr } from "./types";
+import { PartDimensions, PartsStr } from "../types";
 import { Layout } from "./Layout";
 import { Plot } from "./Plot";
 import { listen } from "@tauri-apps/api/event";

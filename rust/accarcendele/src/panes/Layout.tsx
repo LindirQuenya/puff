@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
-import "./Layout.css";
+import "../styles/Layout.css";
 import {
   CanvasProps,
   LayoutParsedEvent,
   ParseLayoutArgs,
   PartDimensions,
   SelectionEvent,
-} from "./types";
+} from "../types";
 import { emit } from "@tauri-apps/api/event";
 import {
   LayoutEvent,
   optimize_event_list,
   processKeyPress,
   renderEvents,
-} from "./layout_util";
+} from "../layout_util";
 import { invoke } from "@tauri-apps/api/core";
 
 export type LayoutProps = {

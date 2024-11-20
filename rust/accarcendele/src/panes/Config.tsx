@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { ParsedConfig, SimType, ValidatedInput } from "./types";
-import "./Config.css";
-import { prefix_to_scale } from "./regex";
+import { ParsedConfig, SimType, ValidatedInput } from "../types";
+import "../styles/Config.css";
+import { prefix_to_scale } from "../regex";
 import { invoke } from "@tauri-apps/api/core";
 
 const POSITIVE_FLOAT =

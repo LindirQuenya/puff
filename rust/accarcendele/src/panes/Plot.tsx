@@ -9,7 +9,7 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import "./Plot.css";
+import "../styles/Plot.css";
 
 ChartJS.register(
   CategoryScale,

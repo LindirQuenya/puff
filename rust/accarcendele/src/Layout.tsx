@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
 import "./Layout.css";
 import {
-	CanvasProps, LayoutParsedEvent, ParseLayoutArgs, PartDimensions, SelectionEvent
+  CanvasProps,
+  LayoutParsedEvent,
+  ParseLayoutArgs,
+  PartDimensions,
+  SelectionEvent,
 } from "./types";
 import { emit } from "@tauri-apps/api/event";
 import {
-	LayoutEvent, optimize_event_list, processKeyPress, renderEvents
+  LayoutEvent,
+  optimize_event_list,
+  processKeyPress,
+  renderEvents,
 } from "./layout_util";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -33,7 +40,7 @@ export function Layout(props: LayoutProps) {
   } as CanvasProps;
   const [layout, err] = renderEvents(props.dims, eventList, canvasProps);
   if (err != null) {
-		// TODO make this a real error message.
+    // TODO make this a real error message.
     console.error("Layout error: " + err);
   }
   useEffect(() => {
@@ -51,11 +58,11 @@ export function Layout(props: LayoutProps) {
       id="layout"
       tabIndex={0}
       onKeyDown={(e) => {
-				const newEvents = processKeyPress(e, eventList, props.dims, layout);
-				if (newEvents !== null) {
-					setEventList(optimize_event_list(newEvents));
-				}
-			}}
+        const newEvents = processKeyPress(e, eventList, props.dims, layout);
+        if (newEvents !== null) {
+          setEventList(optimize_event_list(newEvents));
+        }
+      }}
       onBlur={() => {
         emit("part-selection", { selection: undefined } as SelectionEvent);
         const ports = [];
@@ -64,9 +71,9 @@ export function Layout(props: LayoutProps) {
           if (port !== null) {
             sim_netlist.push({
               // Internally, z means match. It's not a real part, hush hush.
-              part: 'z' as keyof PartDimensions,
+              part: "z" as keyof PartDimensions,
               port_nets: [port.net_index],
-              source_event: 0
+              source_event: 0,
             });
             ports.push(sim_netlist.length - 1);
           } else {
@@ -74,13 +81,25 @@ export function Layout(props: LayoutProps) {
           }
         }
         // TODO grounds
-        invoke('parse_layout', { netlist: sim_netlist, portNetlistInd: ports, grounds: [] } as ParseLayoutArgs).catch(console.error).then((val) => emit('layout-parsed', { availablePorts: val as number[]} as LayoutParsedEvent));
+        invoke("parse_layout", {
+          netlist: sim_netlist,
+          portNetlistInd: ports,
+          grounds: [],
+        } as ParseLayoutArgs)
+          .catch(console.error)
+          .then((val) =>
+            emit("layout-parsed", {
+              availablePorts: val as number[],
+            } as LayoutParsedEvent),
+          );
       }}
       onFocus={() => {
-        emit("part-selection", { selection: layout.selectedPart } as SelectionEvent);
+        emit("part-selection", {
+          selection: layout.selectedPart,
+        } as SelectionEvent);
       }}
     >
-      <canvas id="layoutCanvas" width = "200px" height = "200px"/>
+      <canvas id="layoutCanvas" width="200px" height="200px" />
     </div>
   );
 }

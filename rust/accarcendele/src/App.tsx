@@ -17,7 +17,7 @@ export default function App() {
   const [boardDims, setBoardDims] = useState(12e-3);
   useEffect(() => {
     const unlisten = listen("config-update", async () => {
-      setBoardDims(await invoke('get_dimensions'));
+      setBoardDims(await invoke("get_dimensions"));
     });
     return () => {
       unlisten.then((ul) => ul());
@@ -35,12 +35,12 @@ export default function App() {
       </div>
       <div id="graphcol" className="column">
         <div id="layoutsmithrow" className="row">
-          <Layout boardSize={boardDims} dims={dims}/>
+          <Layout boardSize={boardDims} dims={dims} />
           <div id="smith">
             <a>smith</a>
           </div>
         </div>
-        <Plot/>
+        <Plot />
       </div>
     </div>
   );

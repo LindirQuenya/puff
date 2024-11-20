@@ -58,7 +58,9 @@ export function Parts(props: PartsProps) {
       {},
     ) as PartsStr;
   });
-  const [selectedPart, setSelectedPart] = useState(undefined as keyof PartsStr | undefined);
+  const [selectedPart, setSelectedPart] = useState(
+    undefined as keyof PartsStr | undefined,
+  );
   async function getDim(c: keyof PartsStr): Promise<PartDimension | undefined> {
     let newdim: PartDimension | undefined = undefined;
     // TODO handle errors from invoke.

@@ -1,6 +1,6 @@
 #layoutCanvas {
-	height: 200px;
-	aspect-ratio: 1 / 1;
-	background-color: black;
-	border: 1px dashed white;
+  height: 200px;
+  aspect-ratio: 1 / 1;
+  background-color: black;
+  border: 1px dashed white;
 }

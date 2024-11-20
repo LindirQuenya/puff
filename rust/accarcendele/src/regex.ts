@@ -73,9 +73,7 @@ export function extract_float(
   start: number,
   allowNegative?: boolean,
 ): [number, number] | null {
-  const match = s
-    .slice(start)
-    .match(GENERIC_FLOAT_CHUNK);
+  const match = s.slice(start).match(GENERIC_FLOAT_CHUNK);
   if (!match) {
     return null;
   }
@@ -93,9 +91,7 @@ export function extract_integer(
   start: number,
   allowNegative?: boolean,
 ): [number, number] | null {
-  const match = s
-    .slice(start)
-    .match(INTEGER_CHUNK);
+  const match = s.slice(start).match(INTEGER_CHUNK);
   if (!match) {
     return null;
   }

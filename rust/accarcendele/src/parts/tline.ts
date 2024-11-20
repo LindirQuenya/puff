@@ -1,6 +1,15 @@
 import { getNode, NetListElement, NetNode, to_px } from "../layout_util";
 import { extract_impedance, extract_length, TLINE_LABEL } from "../regex";
-import { CanvasProps, Direction, DrawingUpdate, LengthUnit, PartDimensions, PhysicalCoordinates, TLine, TLineDimensions } from "../types";
+import {
+  CanvasProps,
+  Direction,
+  DrawingUpdate,
+  LengthUnit,
+  PartDimensions,
+  PhysicalCoordinates,
+  TLine,
+  TLineDimensions,
+} from "../types";
 
 // Returns null if invalid.
 export function parse_tline(s: string): TLine | null {
@@ -38,25 +47,45 @@ export function parse_tline(s: string): TLine | null {
   };
 }
 
-export function move_half_tline(dim: TLineDimensions, canvas: CanvasProps, dir: Direction): PhysicalCoordinates | null {
-  let doubled = draw_tline('a', dim, {
-    pos: {
-      x_m: canvas.pos.x_m * 2, y_m: canvas.pos.y_m * 2
+export function move_half_tline(
+  dim: TLineDimensions,
+  canvas: CanvasProps,
+  dir: Direction,
+): PhysicalCoordinates | null {
+  let doubled = draw_tline(
+    "a",
+    dim,
+    {
+      pos: {
+        x_m: canvas.pos.x_m * 2,
+        y_m: canvas.pos.y_m * 2,
+      },
+      width_m: canvas.width_m * 2,
+      height_m: canvas.height_m * 2,
     },
-    width_m: canvas.width_m * 2,
-    height_m: canvas.height_m * 2
-  }, dir);
+    dir,
+  );
   if (doubled === null) {
     return null;
   }
   return {
     x_m: doubled[0].new_pos.x_m / 2,
-    y_m: doubled[0].new_pos.y_m / 2
+    y_m: doubled[0].new_pos.y_m / 2,
   };
 }
 
-export function draw_tline(letter: string, dim: TLineDimensions, canvas: CanvasProps, dir: Direction): [DrawingUpdate, PhysicalCoordinates[]] | null {
-  let maxX = -1, maxY = -1, minX = -1, minY = -1, newX = -1, newY = -1;
+export function draw_tline(
+  letter: string,
+  dim: TLineDimensions,
+  canvas: CanvasProps,
+  dir: Direction,
+): [DrawingUpdate, PhysicalCoordinates[]] | null {
+  let maxX = -1,
+    maxY = -1,
+    minX = -1,
+    minY = -1,
+    newX = -1,
+    newY = -1;
   switch (dir) {
     // TODO maybe simplify with e.g. "getDimensions()->bounding box", and then a generic function to do direction-matching?
     // Though honestly there are only a few components that don't end up looking the same. Most are either a rectangle or triangle.
@@ -101,62 +130,106 @@ export function draw_tline(letter: string, dim: TLineDimensions, canvas: CanvasP
   if (minY < 0 || maxY > canvas.height_m || minX < 0 || maxX > canvas.width_m) {
     return null;
   }
-  
-  const update = (ctx: CanvasRenderingContext2D, width_px: number, height_px: number) => {
+
+  const update = (
+    ctx: CanvasRenderingContext2D,
+    width_px: number,
+    height_px: number,
+  ) => {
     const [x_px, y_px] = to_px(minX, minY, canvas, width_px, height_px);
-    const [w_px, h_px] = to_px(maxX - minX, maxY - minY, canvas, width_px, height_px);
+    const [w_px, h_px] = to_px(
+      maxX - minX,
+      maxY - minY,
+      canvas,
+      width_px,
+      height_px,
+    );
     ctx.fillStyle = "#808000";
     ctx.fillRect(x_px, y_px, w_px, h_px);
     ctx.font = "10px serif";
     ctx.fillStyle = "red";
-    ctx.fillText(letter, Math.floor(x_px + w_px / 2), Math.floor(y_px + h_px / 2));
+    ctx.fillText(
+      letter,
+      Math.floor(x_px + w_px / 2),
+      Math.floor(y_px + h_px / 2),
+    );
   };
 
-  return [{
-    update,
-    new_pos: {
-      x_m: newX,
-      y_m: newY
-    }
-  }, [{
-    x_m: canvas.pos.x_m,
-    y_m: canvas.pos.y_m
-  }, {
-    x_m: newX,
-    y_m: newY
-  }]];
+  return [
+    {
+      update,
+      new_pos: {
+        x_m: newX,
+        y_m: newY,
+      },
+    },
+    [
+      {
+        x_m: canvas.pos.x_m,
+        y_m: canvas.pos.y_m,
+      },
+      {
+        x_m: newX,
+        y_m: newY,
+      },
+    ],
+  ];
 }
 
-export function update_netlist_tline(port_locations: PhysicalCoordinates[], netlist: NetListElement[], nodes: NetNode[], dir: Direction, source_event: number, part: keyof PartDimensions): [NetListElement[], NetNode[]] {
-  let port1 = -1, port2 = -1;
+export function update_netlist_tline(
+  port_locations: PhysicalCoordinates[],
+  netlist: NetListElement[],
+  nodes: NetNode[],
+  dir: Direction,
+  source_event: number,
+  part: keyof PartDimensions,
+): [NetListElement[], NetNode[]] {
+  let port1 = -1,
+    port2 = -1;
   // TODO figure out tolerance
-  [nodes, port1] = getNode(nodes, port_locations[0].x_m, port_locations[0].y_m, 1e-12);
-  [nodes, port2] = getNode(nodes, port_locations[1].x_m, port_locations[1].y_m, 1e-12);
+  [nodes, port1] = getNode(
+    nodes,
+    port_locations[0].x_m,
+    port_locations[0].y_m,
+    1e-12,
+  );
+  [nodes, port2] = getNode(
+    nodes,
+    port_locations[1].x_m,
+    port_locations[1].y_m,
+    1e-12,
+  );
   switch (dir) {
     case Direction.Up: {
-      nodes[port1] = {...nodes[port1], up: [port2, netlist.length]};
-      nodes[port2] = {...nodes[port2], down: [port1, netlist.length]};
+      nodes[port1] = { ...nodes[port1], up: [port2, netlist.length] };
+      nodes[port2] = { ...nodes[port2], down: [port1, netlist.length] };
       break;
     }
     case Direction.Down: {
-      nodes[port1] = {...nodes[port1], down: [port2, netlist.length]};
-      nodes[port2] = {...nodes[port2], up: [port1, netlist.length]};
+      nodes[port1] = { ...nodes[port1], down: [port2, netlist.length] };
+      nodes[port2] = { ...nodes[port2], up: [port1, netlist.length] };
       break;
     }
     case Direction.Left: {
-      nodes[port1] = {...nodes[port1], left: [port2, netlist.length]};
-      nodes[port2] = {...nodes[port2], right: [port1, netlist.length]};
+      nodes[port1] = { ...nodes[port1], left: [port2, netlist.length] };
+      nodes[port2] = { ...nodes[port2], right: [port1, netlist.length] };
       break;
     }
     case Direction.Right: {
-      nodes[port1] = {...nodes[port1], right: [port2, netlist.length]};
-      nodes[port2] = {...nodes[port2], left: [port1, netlist.length]};
+      nodes[port1] = { ...nodes[port1], right: [port2, netlist.length] };
+      nodes[port2] = { ...nodes[port2], left: [port1, netlist.length] };
       break;
     }
   }
-  return [[...netlist, {
-    part,
-    port_nets: [port1, port2],
-    source_event: source_event
-  }], nodes]
+  return [
+    [
+      ...netlist,
+      {
+        part,
+        port_nets: [port1, port2],
+        source_event: source_event,
+      },
+    ],
+    nodes,
+  ];
 }

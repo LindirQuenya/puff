@@ -86,8 +86,8 @@ export type Transformer = {
 
 export type Part =
   | { kind: "t"; part: TLine }
-  | { kind: "x"; part: Transformer}
-  | { kind: "d"; part: SparamDev};
+  | { kind: "x"; part: Transformer }
+  | { kind: "d"; part: SparamDev };
 
 export type ValidatedPart = {
   spec: string;
@@ -119,38 +119,42 @@ export type PartDimensions = {
   [Property in keyof PartsStr]: PartDimension | undefined;
 };
 
-export type PartDimension = { kind: "t"; dim: TLineDimensions } | {kind: "d"; dim: TriangleDimensions};
+export type PartDimension =
+  | { kind: "t"; dim: TLineDimensions }
+  | { kind: "d"; dim: TriangleDimensions };
 
 export type SelectionEvent = {
-  selection: keyof PartsStr | undefined
+  selection: keyof PartsStr | undefined;
 };
 
 export enum Direction {
   Up,
   Down,
   Right,
-  Left
-};
+  Left,
+}
 
 export type CanvasProps = {
-  pos: PhysicalCoordinates,
-  width_m: number,
-  height_m: number
-}
-export type DrawFunc = {(ctx: CanvasRenderingContext2D, width_px: number, height_px: number): void};
+  pos: PhysicalCoordinates;
+  width_m: number;
+  height_m: number;
+};
+export type DrawFunc = {
+  (ctx: CanvasRenderingContext2D, width_px: number, height_px: number): void;
+};
 export type DrawingUpdate = {
-  update: DrawFunc,
-  new_pos: PhysicalCoordinates
-}
+  update: DrawFunc;
+  new_pos: PhysicalCoordinates;
+};
 export type PhysicalCoordinates = {
-  x_m: number,
-  y_m: number
-}
+  x_m: number;
+  y_m: number;
+};
 export type ParseLayoutArgs = {
-  netlist: NetListElement[],
-  portNetlistInd: (number | null)[],
-  grounds: number[]
+  netlist: NetListElement[];
+  portNetlistInd: (number | null)[];
+  grounds: number[];
 };
 export type LayoutParsedEvent = {
-  availablePorts: number[]
+  availablePorts: number[];
 };

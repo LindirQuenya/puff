@@ -16,21 +16,21 @@ export function parse_sparamdev(s: string): SparamDev | null {
     startInd = nports_parsed[1];
   }
 
-	// Extract the filename.
-	const filename = s.slice(startInd);
+  // Extract the filename.
+  const filename = s.slice(startInd);
   const nports_guessed = filename.match(/s(\d+)p$/i);
-	let nports = 0;
-	if (nports_parsed) {
-		nports = nports_parsed[0];
-	} else if (nports_guessed) {
-		nports = parseInt(nports_guessed[1]);
-	} else {
-		return null;
-	}
+  let nports = 0;
+  if (nports_parsed) {
+    nports = nports_parsed[0];
+  } else if (nports_guessed) {
+    nports = parseInt(nports_guessed[1]);
+  } else {
+    return null;
+  }
 
-	// Don't do path validation here, let the backend handle that.
-	return {
-		filename,
-		nports
-	};
+  // Don't do path validation here, let the backend handle that.
+  return {
+    filename,
+    nports,
+  };
 }

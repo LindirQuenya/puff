@@ -1,3 +1,5 @@
+import { NetListElement } from "./layout_util";
+
 // DANGER: key names must match ConfigStr
 export type ParsedConfig = {
   /** Port impedance */
@@ -31,12 +33,12 @@ export type ValidatedInput = {
 };
 
 export enum SimType {
-  Microstrip,
-  Stripline,
+  Microstrip = 0,
+  Stripline = 1,
   /** Microstrip, manhattan drawing. */
-  MicrostripMH,
+  MicrostripMH = 2,
   /** Stripline, manhattan drawing. */
-  StriplineMH,
+  StriplineMH = 3,
 }
 
 export type Dictionary<T> = {
@@ -121,4 +123,34 @@ export type PartDimension = { kind: "t"; dim: TLineDimensions } | {kind: "d"; di
 
 export type SelectionEvent = {
   selection: keyof PartsStr | undefined
+};
+
+export enum Direction {
+  Up,
+  Down,
+  Right,
+  Left
+};
+
+export type CanvasProps = {
+  pos: PhysicalCoordinates,
+  width_m: number,
+  height_m: number
+}
+export type DrawFunc = {(ctx: CanvasRenderingContext2D, width_px: number, height_px: number): void};
+export type DrawingUpdate = {
+  update: DrawFunc,
+  new_pos: PhysicalCoordinates
+}
+export type PhysicalCoordinates = {
+  x_m: number,
+  y_m: number
+}
+export type ParseLayoutArgs = {
+  netlist: NetListElement[],
+  portNetlistInd: (number | null)[],
+  grounds: number[]
+};
+export type LayoutParsedEvent = {
+  availablePorts: number[]
 };

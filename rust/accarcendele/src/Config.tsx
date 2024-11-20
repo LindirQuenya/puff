@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ParsedConfig, SimType, ValidatedInput } from "./types";
 import "./Config.css";
 import { prefix_to_scale } from "./regex";
@@ -76,6 +76,10 @@ export const defaultParsed = parseConfig(
 
 export function Config() {
   const [config, setConfig] = useState(() => defaultConfig);
+  useEffect(() => {
+    const parsedConfig = parseConfig(config.inputs, config.mode);
+    invoke("update_config", { newconf: parsedConfig });
+  }, [defaultConfig]);
 
   function configrow(key: keyof ConfigStr, label: string, unit: string) {
     const inputclass =

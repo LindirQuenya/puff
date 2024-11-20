@@ -4,7 +4,7 @@ use enerdhil::{parts::tline::TLineDimensions, sim::LengthSpec};
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-#[derive(Serialize_repr, Deserialize_repr, Clone, Copy)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, Clone, Copy)]
 #[repr(u8)]
 pub enum ImpedanceUnit {
     Ohms = 0,
@@ -13,13 +13,13 @@ pub enum ImpedanceUnit {
     Y0 = 3,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Impedance {
     value: f64,
     units: ImpedanceUnit,
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Clone, Copy)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, Clone, Copy)]
 #[repr(u8)]
 pub enum LengthUnit {
     Degrees = 0,
@@ -27,38 +27,39 @@ pub enum LengthUnit {
     SubstrateHeights = 2,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Length {
     value: f64,
     units: LengthUnit,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct TLine {
     pub impedance: Impedance,
     pub length: Length,
     pub correction: Length,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SparamDev {
     pub filename: PathBuf,
     pub nports: usize,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct TLineDimensionsMeters {
     pub p_len: f64,
     pub p_width: f64,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TriangleDimensionsMeters {
     pub base: f64,
     pub height: f64,
     pub port_heights: Vec<f64>,
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Clone, Copy)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, Clone, Copy)]
 #[repr(u8)]
 pub enum SimType {
     Microstrip = 0,
@@ -67,7 +68,7 @@ pub enum SimType {
     StriplineMH = 3,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct ConfigUpdate {
     /// Ohms
     pub zd: f64,
@@ -82,6 +83,13 @@ pub struct ConfigUpdate {
     /// Meters, TODO: unused
     pub c: f64,
     pub mode: SimType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TSNetlistElement {
+    pub part: char,
+    pub port_nets: Vec<usize>,
+    pub source_event: usize,
 }
 
 impl Into<LengthSpec> for Length {

@@ -4,18 +4,26 @@
 /// Various types that will be sent to/from TypeScript
 mod tstypes;
 
-use std::{collections::HashMap, fs::File};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::File,
+    io::BufReader,
+};
 
 use enerdhil::{
     constraint::{validate, Constraints},
-    parts::tline::TLineProps,
-    parts::Component,
+    netlist::{netlist_to_connections, ComponentPort, NetlistElement},
+    parts::{lumpedmatch::MatchProps, sparams::SparamDevice, tline::TLineProps, Component},
+    sfg::SignalFlowGraph,
     sim::{LengthCorrectable, SimProps, SimType},
     Dimensions,
 };
 use parking_lot::{Mutex, RwLock};
 use tauri::{Emitter, Manager, State, Window};
-use tstypes::{ConfigUpdate, SparamDev, TLine, TLineDimensionsMeters, TriangleDimensionsMeters};
+use tstypes::{
+    ConfigUpdate, SparamDev, TLine, TLineDimensionsMeters, TSNetlistElement,
+    TriangleDimensionsMeters,
+};
 
 struct Config {
     sim: SimProps,
@@ -26,6 +34,16 @@ struct Config {
 // Deadlock prevention: listed in acquisition order.
 struct SimSettings(RwLock<Config>);
 struct PartMap(Mutex<HashMap<char, Component>>);
+struct SFG(
+    Mutex<
+        Option<(
+            SignalFlowGraph,
+            Vec<NetlistElement>,
+            Vec<Component>,
+            Vec<Option<ComponentPort>>,
+        )>,
+    >,
+);
 
 #[tauri::command]
 fn add_transmission_line(
@@ -37,8 +55,8 @@ fn add_transmission_line(
     let (line, dimensions) = {
         let sim = &simstate.0.read();
         let zed = desc.impedance.to_ohms(sim.sim.z0);
-        let line = TLineProps::new(zed, desc.length.into(), false, &sim.sim)
-            .map_err(|e| e.to_string())?;
+        let line =
+            TLineProps::new(zed, desc.length.into(), false, &sim.sim).map_err(|e| e.to_string())?;
         let corr = line.to_mm(&desc.correction.into(), &sim.sim);
         let mut dimensions = line.get_dimensions().to_owned();
         dimensions.p_len += corr;
@@ -71,19 +89,20 @@ fn add_sparam_device(
             return Err(e.to_string());
         }
     };
-    let sparams = touchstone::parser::parse_file(f, desc.nports).map_err(|e| e.to_string())?;
-    let device = SParamDevice::new(sparams.params);
+    let sparams = touchstone::parser::parse_file(BufReader::new(f), desc.nports)
+        .map_err(|e| e.to_string())?;
+    let device = SparamDevice::new(sparams.params);
     {
         let mut map = parts.0.lock();
         map.insert(index, Component::SParams(device));
     }
-    let base = 0.05 * (desc.nports + 1) * simstate.0.read().constr.board_dim.0;
-    let height = 3.0.sqrt() * base / 2.0;
+    let base = 0.05 * (desc.nports + 1) as f64 * simstate.0.read().constr.board_dim.0;
+    let height = 3f64.sqrt() * base / 2.0;
     Ok(TriangleDimensionsMeters {
         base,
         height,
         port_heights: (0..desc.nports)
-            .map(|n| (n + 1) * height / (desc.nports + 1))
+            .map(|n| (n as f64 + 1.0) * height / (desc.nports as f64 + 1.0))
             .collect(),
     })
 }
@@ -107,6 +126,58 @@ fn update_config(newconf: ConfigUpdate, simstate: State<SimSettings>, window: Wi
         .map_err(|e| eprintln!("{}", e.to_string()));
 }
 
+#[tauri::command]
+fn get_dimensions(simstate: State<SimSettings>) -> f64 {
+    simstate.0.read().constr.board_dim.0 / 1000.
+}
+
+#[tauri::command]
+fn parse_layout(
+    netlist: Vec<TSNetlistElement>,
+    port_netlist_ind: Vec<Option<usize>>,
+    grounds: Vec<usize>,
+    sfg: State<SFG>,
+    parts: State<PartMap>,
+) -> Result<Vec<usize>, String> {
+    dbg!(&netlist);
+    let mut processed_netlist: Vec<NetlistElement> = Vec::new();
+    let parts_map = parts.0.lock();
+    for elem in netlist {
+        processed_netlist.push(NetlistElement {
+            component: parts_map.get(&elem.part).ok_or("Invalid part?")?.clone(),
+            port_nets: elem.port_nets.clone(),
+        });
+    }
+    dbg!(&processed_netlist);
+    let (conn, virt_comp) =
+        netlist_to_connections(&processed_netlist, &HashSet::from_iter(grounds));
+    dbg!(&conn);
+    dbg!(&virt_comp);
+    let mut sfg_state = sfg.0.lock();
+    let port_components = port_netlist_ind
+        .into_iter()
+        .map(|index_opt| {
+            index_opt.map(|ind| ComponentPort {
+                component_ind: ind,
+                is_virtual: false,
+                port_num: 0,
+            })
+        })
+        .collect::<Vec<Option<ComponentPort>>>();
+    dbg!(&port_components);
+    let avail_port_nums = port_components
+        .iter()
+        .enumerate()
+        .filter_map(|(i, opt)| opt.and(Some(i)))
+        .collect();
+    *sfg_state = Some((
+        SignalFlowGraph::new(&conn),
+        processed_netlist,
+        virt_comp,
+        port_components,
+    ));
+    Ok(avail_port_nums)
+}
 fn main() {
     let sim = SimProps {
         mode: SimType::Microstrip,
@@ -129,10 +200,13 @@ fn main() {
         },
         manhattan: false,
     };
+    let mut parts = HashMap::new();
+    // Super secret internal elements, inaccessible to the user. 'z' is a matched termination.
+    parts.insert('z', Component::Match(MatchProps::default()));
     tauri::Builder::default()
-        .plugin(tauri_plugin_fs::init())
-        .manage(PartMap(Mutex::new(HashMap::new())))
+        .manage(PartMap(Mutex::new(parts)))
         .manage(SimSettings(RwLock::new(config)))
+        .manage(SFG(Mutex::new(None)))
         .setup(|app| {
             #[cfg(debug_assertions)]
             app.get_webview_window("main").unwrap().open_devtools();
@@ -141,7 +215,10 @@ fn main() {
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             add_transmission_line,
-            update_config
+            update_config,
+            get_dimensions,
+            parse_layout,
+            add_sparam_device
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

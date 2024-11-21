@@ -158,3 +158,14 @@ export type ParseLayoutArgs = {
 export type LayoutParsedEvent = {
   availablePorts: number[];
 };
+
+export type DoPlotEvent = {
+  params: [number, number][],
+  freqLim: [number, number],
+  nPoints: number
+};
+
+export type FrequencySweepArgs = {
+  freqs: number[],
+  sToFrom: [number, number][]
+}

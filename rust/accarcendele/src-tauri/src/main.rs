@@ -19,6 +19,7 @@ use enerdhil::{
     Dimensions,
 };
 use parking_lot::{Mutex, RwLock};
+use num::complex::Complex64;
 use tauri::{Emitter, Manager, State, Window};
 use tstypes::{
     ConfigUpdate, SparamDev, TLine, TLineDimensionsMeters, TSNetlistElement,
@@ -178,6 +179,31 @@ fn parse_layout(
     ));
     Ok(avail_port_nums)
 }
+
+#[tauri::command]
+fn frequency_sweep(freqs: Vec<f64>, s_to_from: Vec<[usize; 2]>, sfg: State<SFG>, simstate: State<SimSettings>) -> Result<Vec<Vec<Complex64>>,String> {
+    let config = simstate.0.read();
+    let mut sfgstate = sfg.0.lock();
+    let mut sparams = vec![Vec::new(); s_to_from.len()];
+    if sfgstate.is_none() || freqs.len() == 0 {
+        return Ok(sparams);
+    }
+    let (graph, netlist, virt_comp, ports) = sfgstate.as_mut().unwrap();
+    for [a, b] in &s_to_from {
+        if ports[*a].is_none() || ports[*b].is_none() {
+            return Err(format!("Bad port pair [{}, {}]", a, b));
+        }
+    }
+    graph.populate(freqs[0], &netlist, &virt_comp, &config.sim);
+    for f in freqs {
+        graph.populate_components(f, &netlist, &config.sim);
+        for (i, param) in s_to_from.iter().map(|[a, b]| graph.masons_rule(ports[*b].unwrap(), ports[*a].unwrap(), true)).enumerate() {
+            sparams[i].push(param);
+        }
+    }
+    Ok(sparams)
+}
+
 fn main() {
     let sim = SimProps {
         mode: SimType::Microstrip,
@@ -218,7 +244,8 @@ fn main() {
             update_config,
             get_dimensions,
             parse_layout,
-            add_sparam_device
+            add_sparam_device,
+            frequency_sweep
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -8,6 +8,7 @@ import { Layout } from "./Layout";
 import { Plot } from "./Plot";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { PlotControl } from "./PlotControl";
 
 // TODO: selected part for F1 screen.
 // TODO: react devtools
@@ -27,7 +28,7 @@ export default function App() {
     <div id="mainrow" className="row">
       <div id="textcol" className="column">
         <div id="plotconfig" className="textelem row">
-          <a>F2</a>
+          <PlotControl />
         </div>
         <Message message={message} />
         <Parts setMessage={setMessage} dims={dims} setDims={setDims} />

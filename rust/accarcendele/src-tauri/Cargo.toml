@@ -19,3 +19,4 @@ enerdhil = { path = '../../enerdhil', features = ["serde"] }
 serde_repr = "0.1.19"
 parking_lot = "0.12.3"
 touchstone = { path = '../../touchstone' }
+num = { version = "0.4", features = ["serde"] }

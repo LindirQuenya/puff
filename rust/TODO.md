@@ -20,3 +20,4 @@ Tasks still to be done:
  - [ ] Completely reorganize frontend, split into pane-specific folders
  - [ ] Fiddle with CSS until it has the right scaling behavior
  - [ ] Move to messaging where possible instead of prop-setter passing
+ - [ ] Consolidate/dedupe rust dependencies

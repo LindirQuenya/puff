@@ -1,10 +1,11 @@
 Tasks still to be done:
- - [ ] Multiple components, Mason's rule
-   - [ ] build netlist of components
-   - [ ] auto-insert implicit elements (T, open, short, etc.)
-   - [ ] convert to SFG in petgraph
-   - [ ] use [library](https://docs.rs/graph-cycles/latest/graph_cycles/) to find all 1st order loops
-   - [ ] for each s-param, naively calculate Mason's rule
+ - [x] Multiple components, Mason's rule
+   - [x] build netlist of components
+   - [x] auto-insert implicit elements (T, open, short, etc.)
+   - [x] convert to SFG in petgraph
+   - [x] use [library](https://docs.rs/graph-cycles/latest/graph_cycles/) to find all 1st order loops
+   - [x] for each s-param, naively calculate Mason's rule
+   - [ ] improve the performance to at least match the old version. Should easily beat it with multithreading...
  - [ ] Components
    - [ ] clines
    - [ ] qlines
@@ -15,4 +16,7 @@ Tasks still to be done:
  - [ ] Export
    - [ ] artwork
    - [ ] s-params (touchstone)
- - [ ] Touchstone parser (either fork existing or make own).
+ - [x] Touchstone parser (either fork existing or make own)
+ - [ ] Completely reorganize frontend, split into pane-specific folders
+ - [ ] Fiddle with CSS until it has the right scaling behavior
+ - [ ] Move to messaging where possible instead of prop-setter passing

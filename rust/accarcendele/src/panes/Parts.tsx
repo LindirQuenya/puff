@@ -11,7 +11,7 @@ import {
 } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import { parse_tline } from "../parts/tline";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { parse_sparamdev } from "../parts/sparamdev";
 
 const partNames = "abcdefghijklmnopqr";
@@ -99,6 +99,7 @@ export function Parts(props: PartsProps) {
       await Promise.all(
         [...partNames].map((c) => refreshDim(c as keyof PartsStr)),
       );
+      emit("reparse-layout");
     });
     return () => {
       unlisten.then((ul) => ul());
@@ -179,7 +180,10 @@ export function Parts(props: PartsProps) {
                         } as ValidatedPart,
                       });
                     }}
-                    onBlur={() => refreshDim(c)}
+                    onBlur={() => {
+                      refreshDim(c);
+                      emit("reparse-layout");
+                    }}
                   ></input>
                 </th>
               </tr>

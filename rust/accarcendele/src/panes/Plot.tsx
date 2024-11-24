@@ -83,8 +83,8 @@ export function Plot() {
             return {
               label: `s${payload.params[i][0]}${payload.params[i][1]}`,
               data: arr.map(s => 20*Math.log10(cabs(s))),
-              borderColor: "rgb(53, 162, 235)",
-              backgroundColor: "rgba(53, 162, 235, 0.5)",
+              borderColor: `rgb(${payload.params[i][2]})`,
+              backgroundColor: `rgba(${payload.params[i][2]}, 0.25)`,
             };
           })
         };

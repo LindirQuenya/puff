@@ -160,7 +160,7 @@ export type LayoutParsedEvent = {
 };
 
 export type DoPlotEvent = {
-  params: [number, number][],
+  params: [number, number, string][],
   freqLim: [number, number],
   nPoints: number
 };

@@ -14,8 +14,11 @@ export function PlotControl() {
       unlisten.then((ul) => ul());
     };
   }, [setAvailablePorts]);
+	const colors = ["255, 0, 0", "0, 255, 255", "0, 0, 255", "255, 255, 0"];
 	// Dummy value 10, port 10 doesn't exist and thus should not appear in availablePorts.
-	const sToFrom_usable = sToFrom.filter(v => availablePorts.includes((v[0] ?? 10) - 1) && availablePorts.includes((v[1] ?? 10) - 1));
+	const sToFrom_usable = sToFrom.map((v, i) => {return {"v": v, "c": colors[i]};})
+	.filter((o) => availablePorts.includes((o['v'][0] ?? 10) - 1) && availablePorts.includes((o['v'][1] ?? 10) - 1))
+	.map((o) => [o['v'][0], o['v'][1], o['c']] as [number, number, string]);
 	const [freqLim, setFreqLim] = useState(["1k", "5G"]);
 	const freqLim_parsed = freqLim.map(l => extract_float(l, 0, false)?.[0]).filter(f => f!==undefined);
 	const [nPoints, setNPoints] = useState("200");
@@ -35,20 +38,20 @@ export function PlotControl() {
 	}}>
 		<tr>
 			<th>Points</th>
-			<th><input value={nPoints}/></th>
+			<th><input value={nPoints} onChange={(e) => setNPoints(e.target.value)}/></th>
 		</tr>
 		<tr>
 			<th>Smith Radius</th>
-			<th><input value={smithR}/></th>
+			<th><input value={smithR} onChange={(e) => setSmithR(e.target.value)}/></th>
 		</tr>
 		<tr>
 			<th>fmin</th>
-			<th><input value={freqLim[0]}/></th>
+			<th><input value={freqLim[0]} onChange={(e) => setFreqLim([e.target.value, freqLim[1]])}/></th>
 			<td>Hz</td>
 		</tr>
 		<tr>
 			<th>fmax</th>
-			<th><input value={freqLim[1]}/></th>
+			<th><input value={freqLim[1]} onChange={(e) => setFreqLim([freqLim[0], e.target.value])}/></th>
 			<td>Hz</td>
 		</tr>
 	</table>

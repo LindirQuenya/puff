@@ -7,7 +7,7 @@ import {
   PartDimensions,
   SelectionEvent,
 } from "../types";
-import { emit } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import {
   LayoutEvent,
   optimize_event_list,
@@ -53,6 +53,40 @@ export function Layout(props: LayoutProps) {
       }
     }
   }, [eventList, props.boardSize, props.dims]);
+  useEffect(() => {
+    const unlisten = listen('reparse-layout', (e) => {
+      const ports = [];
+      const sim_netlist = [...layout.netlist];
+      for (const port of layout.ports) {
+        if (port !== null) {
+          sim_netlist.push({
+            // Internally, z means match. It's not a real part, hush hush.
+            part: "z" as keyof PartDimensions,
+            port_nets: [port.net_index],
+            source_event: 0,
+          });
+          ports.push(sim_netlist.length - 1);
+        } else {
+          ports.push(null);
+        }
+      }
+      // TODO grounds
+      invoke("parse_layout", {
+        netlist: sim_netlist,
+        portNetlistInd: ports,
+        grounds: [],
+      } as ParseLayoutArgs)
+        .catch(console.error)
+        .then((val) =>
+          emit("layout-parsed", {
+            availablePorts: val as number[],
+          } as LayoutParsedEvent),
+        );
+    });
+    return () => {
+      unlisten.then((ul) => ul());
+    };
+  }, [layout.netlist, layout.ports]);
   return (
     <div
       id="layout"
@@ -65,33 +99,7 @@ export function Layout(props: LayoutProps) {
       }}
       onBlur={() => {
         emit("part-selection", { selection: undefined } as SelectionEvent);
-        const ports = [];
-        const sim_netlist = [...layout.netlist];
-        for (const port of layout.ports) {
-          if (port !== null) {
-            sim_netlist.push({
-              // Internally, z means match. It's not a real part, hush hush.
-              part: "z" as keyof PartDimensions,
-              port_nets: [port.net_index],
-              source_event: 0,
-            });
-            ports.push(sim_netlist.length - 1);
-          } else {
-            ports.push(null);
-          }
-        }
-        // TODO grounds
-        invoke("parse_layout", {
-          netlist: sim_netlist,
-          portNetlistInd: ports,
-          grounds: [],
-        } as ParseLayoutArgs)
-          .catch(console.error)
-          .then((val) =>
-            emit("layout-parsed", {
-              availablePorts: val as number[],
-            } as LayoutParsedEvent),
-          );
+        emit("reparse-layout");
       }}
       onFocus={() => {
         emit("part-selection", {

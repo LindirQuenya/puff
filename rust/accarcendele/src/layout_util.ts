@@ -111,6 +111,8 @@ export function optimize_event_list(events: LayoutEvent[]): LayoutEvent[] {
   const newEvents: LayoutEvent[] = [];
   for (const event of events) {
     if (newEvents.length > 0) {
+      // Part selection should be ignored if we don't do anything with it.
+      // TODO extend this to hop over operations that don't care about selected part, e.g. placing grounds, etc.
       if (
         event.kind === "selectPart" &&
         newEvents[newEvents.length - 1].kind === "selectPart"

@@ -1,0 +1,3 @@
+[submodule "rust/chartjs-chart-smith"]
+	path = rust/chartjs-chart-smith
+	url = https://github.com/LindirQuenya/chartjs-chart-smith

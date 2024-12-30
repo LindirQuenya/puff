@@ -28,10 +28,13 @@ ChartJS.register(
 
 const options_init = {
   responsive: true,
+  maintainAspectRatio: true,
+  aspectRatio: 2,
   scales: {
     x: {
       type: 'linear',
-      grace: '0%'
+      grace: '0%',
+      
     },
     y: {
       min: -20,
@@ -44,7 +47,6 @@ const options_init = {
     },
     title: {
       display: false,
-      text: "Chart.js Line Chart",
     },
   },
 };

@@ -36,6 +36,7 @@ export function PlotControl() {
 			}
 		}
 	}}>
+		<tbody>
 		<tr>
 			<th>Points</th>
 			<th><input value={nPoints} onChange={(e) => setNPoints(e.target.value)}/></th>
@@ -54,6 +55,7 @@ export function PlotControl() {
 			<th><input value={freqLim[1]} onChange={(e) => setFreqLim([freqLim[0], e.target.value])}/></th>
 			<td>Hz</td>
 		</tr>
+		</tbody>
 	</table>
 	);
 }

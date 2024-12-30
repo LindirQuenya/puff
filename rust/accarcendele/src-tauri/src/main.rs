@@ -181,7 +181,7 @@ fn parse_layout(
 }
 
 #[tauri::command]
-fn frequency_sweep(freqs: Vec<f64>, s_to_from: Vec<[usize; 2]>, sfg: State<SFG>, simstate: State<SimSettings>) -> Result<Vec<Vec<Complex64>>,String> {
+async fn frequency_sweep(freqs: Vec<f64>, s_to_from: Vec<[usize; 2]>, sfg: State<'_, SFG>, simstate: State<'_, SimSettings>) -> Result<Vec<Vec<Complex64>>,String> {
     let config = simstate.0.read();
     let mut sfgstate = sfg.0.lock();
     let mut sparams = vec![Vec::new(); s_to_from.len()];
@@ -234,8 +234,8 @@ fn main() {
         .manage(SimSettings(RwLock::new(config)))
         .manage(SFG(Mutex::new(None)))
         .setup(|app| {
-            #[cfg(debug_assertions)]
-            app.get_webview_window("main").unwrap().open_devtools();
+//            #[cfg(debug_assertions)]
+//            app.get_webview_window("main").unwrap().open_devtools();
             Ok(())
         })
         .plugin(tauri_plugin_shell::init())

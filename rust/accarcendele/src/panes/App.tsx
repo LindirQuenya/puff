@@ -9,6 +9,7 @@ import { Plot } from "./Plot";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { PlotControl } from "./PlotControl";
+import { Smith } from "./Smith";
 
 // TODO: selected part for F1 screen.
 // TODO: react devtools
@@ -38,7 +39,7 @@ export default function App() {
         <div id="layoutsmithrow" className="row">
           <Layout boardSize={boardDims} dims={dims} />
           <div id="smith">
-            <a>smith</a>
+            <Smith/>
           </div>
         </div>
         <Plot />

@@ -18,7 +18,10 @@
     "@stdlib/math-base-special-cphase": "^0.2.2",
     "@tauri-apps/api": ">=2.0.0-beta.0",
     "@tauri-apps/plugin-shell": ">=2.0.0-beta.0",
+    "@types/chart.js2": "npm:@types/chart.js@~2.9.4",
     "chart.js": "^4.4.3",
+    "chart.js2": "npm:chart.js@~2.9.3",
+    "chartjs-chart-smith": "file:../chartjs-chart-smith",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0"

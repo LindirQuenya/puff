@@ -29,6 +29,7 @@ export function Layout(props: LayoutProps) {
   // TODO make nets be the same if within some fuzzy region (manufacturing resolution?)
   // TODO make this incremental/cached?
   const [eventList, setEventList] = useState([] as LayoutEvent[]);
+  const dim_px = Math.min(0.45*window.innerHeight, 0.35*window.innerWidth);
   // TODO memo
   const canvasProps = {
     pos: {
@@ -107,7 +108,7 @@ export function Layout(props: LayoutProps) {
         } as SelectionEvent);
       }}
     >
-      <canvas id="layoutCanvas" width="300px" height="300px" />
+      <canvas id="layoutCanvas" width={dim_px} height={dim_px}/>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { NetListElement } from "./layout_util";
-
+import { Complex128 } from '@stdlib/types/complex';
 // DANGER: key names must match ConfigStr
 export type ParsedConfig = {
   /** Port impedance */
@@ -163,6 +163,12 @@ export type DoPlotEvent = {
   params: [number, number, string][],
   freqLim: [number, number],
   nPoints: number
+};
+
+export type PlotSmithEvent = {
+  params: Complex128[][],
+  freqs: number[],
+  payload: DoPlotEvent,
 };
 
 export type FrequencySweepArgs = {

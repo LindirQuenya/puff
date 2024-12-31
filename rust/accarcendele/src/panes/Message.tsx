@@ -1,10 +1,12 @@
+import "../styles/Message.css";
+
 export type MessageProps = {
   message: string[];
 };
 
 export function Message(props: MessageProps) {
   return (
-    <div id="message" className="textelem row">
+    <div id="message" className="second-to-shrink topmargin">
       <p>
         {props.message[0]}
         <br />

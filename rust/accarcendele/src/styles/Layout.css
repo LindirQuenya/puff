@@ -1,5 +1,6 @@
 #layoutCanvas {
-  height: 200px;
+  width:min(35vw, 45vh);
+  height:min(35vw, 45vh);
   aspect-ratio: 1 / 1;
   background-color: black;
   border: 1px dashed white;

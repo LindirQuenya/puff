@@ -118,7 +118,7 @@ export function Config() {
   return (
     <div
       id="config"
-      className="textelem row"
+      className="second-to-shrink topmargin"
       onKeyDownCapture={(e) => {
         if (e.key === "Tab") {
           e.preventDefault();

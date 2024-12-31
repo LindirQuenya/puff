@@ -16,6 +16,8 @@ body {
   font-size: 8px;
   background-color: black;
   color: white;
+  margin: 0;
+  height: 100vh;
 }
 
 table {
@@ -23,11 +25,15 @@ table {
   margin: 5px 5px 5px 0px;
 }
 
-#mainrow {
+.flex-container {
   display: flex;
-  justify-content: center;
-  font-family: monospace;
-  font-size: 8px;
+}
+
+.second-to-shrink {
+  flex-shrink: 1;
+  flex-grow: 0;
+  min-height: min-content;
+  /* background: cornflowerblue; */
 }
 
 a {
@@ -36,58 +42,48 @@ a {
 
 div {
   border: 1px dashed white;
+  box-sizing: border-box;
 }
 
 .row {
-  display: flex;
-  justify-content: flex-start;
-  align-items: stretch;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
   flex-direction: row;
   flex-wrap: nowrap;
 }
-div + div {
-  margin-top: 10px;
-}
 .column {
-  display: flex;
-  align-items: stretch;
+  align-items: center;
   flex-flow: column;
   justify-content: center;
-  padding: 10px;
+  padding: 0vh 0vw;
   align-items: center;
   height: 100%;
 }
 .textelem {
   width: 100%;
 }
-#graphcol {
-  flex-grow: 9;
-}
-#textcol {
-  flex-basis: 90px;
-  flex-grow: 1;
-  flex-shrink: 0;
-}
-#layout {
-  flex-basis: 50%;
-}
-#smith {
-  flex-basis: 50%;
-}
-#layoutsmithrow {
-  width: 100%;
-  flex-basis: 50%;
-}
-#plot {
-  width: 100%;
+#root {
+  border: 0px;
   height: 100%;
 }
-#parts {
-  height: auto;
-  overflow: hidden;
+
+#mainrow {
+  justify-content: center;
+  font-family: monospace;
+  font-size: 8px;
+  height:100%;
+}
+#graphcol {
+  flex-grow: 0;
+  flex-shrink: 1;
+  flex-basis: 80vw;
 }
 #textcol {
-  height: min-content;
+  flex-basis: 20vw;
+  flex-grow: 1;
+  flex-shrink: 0;
+  align-items: start;
 }
 .invalid {
   border-color: red;
@@ -103,4 +99,8 @@ p {
   text-align: center;
   width: 100%;
   margin: 5px;
+}
+
+.topmargin {
+  margin-top: 3px;
 }

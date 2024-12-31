@@ -10,8 +10,8 @@ import {
 import { Line } from "react-chartjs-2";
 import "../styles/Plot.css";
 import { useEffect, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
-import { DoPlotEvent, FrequencySweepArgs } from "../types";
+import { emit, listen } from "@tauri-apps/api/event";
+import { DoPlotEvent, FrequencySweepArgs, PlotSmithEvent } from "../types";
 import linspace from "@stdlib/array-linspace";
 import { invoke } from "@tauri-apps/api/core";
 import { Complex128 } from "@stdlib/complex-float64";
@@ -90,6 +90,7 @@ export function Plot() {
             };
           })
         };
+        emit('plot-smith', {params, freqs, payload} as PlotSmithEvent);
         setData(newData);
       });
     });

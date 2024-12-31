@@ -1,0 +1,8 @@
+#parts {
+	flex-shrink: 0;
+	flex-grow: 1;
+	flex-basis: 0px;
+	min-height: 30px;
+	/* background: coral; */
+	overflow-y: scroll;
+}

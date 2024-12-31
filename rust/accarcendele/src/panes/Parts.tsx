@@ -13,6 +13,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { parse_tline } from "../parts/tline";
 import { emit, listen } from "@tauri-apps/api/event";
 import { parse_sparamdev } from "../parts/sparamdev";
+import "../styles/Parts.css";
 
 const partNames = "abcdefghijklmnopqr";
 
@@ -116,7 +117,7 @@ export function Parts(props: PartsProps) {
   return (
     <div
       id="parts"
-      className="textelem row"
+      className="topmargin"
       onKeyDownCapture={async (e) => {
         const index = get_index(e);
         if (!index) {
@@ -186,6 +187,7 @@ export function Parts(props: PartsProps) {
                     }}
                   ></input>
                 </th>
+                <td/>
               </tr>
             );
           })}

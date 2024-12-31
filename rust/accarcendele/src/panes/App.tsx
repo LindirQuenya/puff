@@ -26,23 +26,19 @@ export default function App() {
     };
   }, [dims]);
   return (
-    <div id="mainrow" className="row">
-      <div id="textcol" className="column">
-        <div id="plotconfig" className="textelem row">
-          <PlotControl />
-        </div>
+    <div id="mainrow" className="row flex-container">
+      <div id="textcol" className="column flex-container">
+        <PlotControl/>
         <Message message={message} />
         <Parts setMessage={setMessage} dims={dims} setDims={setDims} />
         <Config />
       </div>
-      <div id="graphcol" className="column">
-        <div id="layoutsmithrow" className="row">
-          <Layout boardSize={boardDims} dims={dims} />
-          <div id="smith">
-            <Smith/>
-          </div>
+      <div id="graphcol">
+        <div id="layoutsmithrow" className="row flex-container">
+        <Layout boardSize={boardDims} dims={dims} />
+        <Smith/>
         </div>
-        <Plot />
+        <Plot/>
       </div>
     </div>
   );

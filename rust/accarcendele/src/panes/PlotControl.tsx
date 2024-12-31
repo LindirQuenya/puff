@@ -26,6 +26,7 @@ export function PlotControl() {
 	const [smithR, setSmithR] = useState("1");
 	const smithR_parsed = extract_float(smithR, 0, false)?.[0];
 	return (
+	<div id="plotcontroldiv" className="second-to-shrink" >
 	<table id="plotcontroltable" onKeyDownCapture={(e) => {
 		if (e.key.toLowerCase() === 'p') {
 			e.preventDefault();
@@ -57,5 +58,6 @@ export function PlotControl() {
 		</tr>
 		</tbody>
 	</table>
+	</div>
 	);
 }

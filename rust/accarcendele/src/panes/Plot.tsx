@@ -43,11 +43,17 @@ const options_init = {
   },
   plugins: {
     legend: {
-      position: "top" as const,
+      position: "top",
     },
     title: {
       display: false,
     },
+  },
+  onHover: (e, elements) => {
+    if (elements.length) {
+      // TODO emit some sort of event.
+      console.log(elements[0]);
+    }
   },
 };
 

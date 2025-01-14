@@ -1,20 +1,31 @@
+import { useEffect, useState } from "react";
 import "../styles/Message.css";
+import { emit, listen } from "@tauri-apps/api/event";
 
-export type MessageProps = {
-  message: string[];
-};
-
-export function Message(props: MessageProps) {
+export function Message() {
+  const [message, setMessage] = useState(["", "", ""]);
+  useEffect(() => {
+    const unlisten = listen('set-message', (e) => {
+      setMessage(e.payload as string[]);
+    });
+    return () => {
+      unlisten.then((ul) => ul());
+    };
+  }, [setMessage]);
   return (
     <div id="message" className="second-to-shrink topmargin">
-      <p>
-        {props.message[0]}
+      <p id="message-p">
+        {message[0]}
         <br />
-        {props.message[1]}
+        {message[1]}
         <br />
-        {props.message[2]}
+        {message[2]}
         <br />
       </p>
     </div>
   );
+}
+
+export function SetMessage(msg: string[]) {
+  emit('set-message', msg);
 }

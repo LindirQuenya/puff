@@ -14,6 +14,7 @@ import { parse_tline } from "../parts/tline";
 import { emit, listen } from "@tauri-apps/api/event";
 import { parse_sparamdev } from "../parts/sparamdev";
 import "../styles/Parts.css";
+import { SetMessage } from "./Message";
 
 const partNames = "abcdefghijklmnopqr";
 
@@ -22,6 +23,7 @@ function validate_part(s: string): Part | null {
     return null;
   }
   switch (s[0]) {
+    // hmm I want to abstract this into some data structure. TODO please
     case "t": {
       const part = parse_tline(s);
       if (!part) return null;
@@ -47,7 +49,6 @@ function get_index(e: SyntheticEvent): keyof PartsStr | null {
 }
 
 export type PartsProps = {
-  setMessage: React.Dispatch<React.SetStateAction<string[]>>;
   dims: PartDimensions;
   setDims: React.Dispatch<React.SetStateAction<PartDimensions>>;
 };
@@ -64,7 +65,6 @@ export function Parts(props: PartsProps) {
   );
   async function getDim(c: keyof PartsStr): Promise<PartDimension | undefined> {
     let newdim: PartDimension | undefined = undefined;
-    // TODO handle errors from invoke.
     if (parts[c].parsed) {
       switch (parts[c].parsed.kind) {
         case "t": {
@@ -88,12 +88,16 @@ export function Parts(props: PartsProps) {
     return newdim;
   }
   async function refreshDim(c: keyof PartsStr) {
-    const dim = await getDim(c);
-    console.log(dim);
-    props.setDims({
-      ...props.dims,
-      [c]: dim,
-    });
+    try {
+      const dim = await getDim(c);
+      console.log(dim);
+      props.setDims({
+        ...props.dims,
+        [c]: dim,
+      });
+    } catch (e) {
+      SetMessage([`Part error: ${c}`, ...(e as string).split('\n'), ""]);
+    }
   }
   useEffect(() => {
     const unlisten = listen("config-update", async () => {
@@ -126,9 +130,16 @@ export function Parts(props: PartsProps) {
         // TODO: convenient UI things (tab, up/down arrows)
         if (e.key === "=") {
           e.preventDefault();
-          const dim = await getDim(index);
+
+          let dim = undefined;
+          try {
+            dim = await getDim(index);
+          } catch (e) {
+            SetMessage([`Part error: ${index}`, ...(e as string).split('\n'), ""]);
+            return;
+          }
           if (!dim) {
-            props.setMessage(["", "Invalid part", ""]);
+            SetMessage(["", "Invalid part", ""]);
             return;
           }
           console.log(parts[index]);
@@ -136,7 +147,7 @@ export function Parts(props: PartsProps) {
           switch (dim.kind) {
             case "t":
               // TODO: make formatting better with non-milli prefixes.
-              props.setMessage([
+              SetMessage([
                 `l: ${(1000 * dim.dim.p_len).toPrecision(5)}mm`,
                 `w: ${(1000 * dim.dim.p_width).toPrecision(5)}mm`,
                 "",

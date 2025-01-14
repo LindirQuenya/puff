@@ -14,7 +14,6 @@ import { Smith } from "./Smith";
 // TODO: selected part for F1 screen.
 // TODO: react devtools
 export default function App() {
-  const [message, setMessage] = useState(["", "", ""]);
   const [dims, setDims] = useState({} as PartDimensions);
   const [boardDims, setBoardDims] = useState(12e-3);
   useEffect(() => {
@@ -29,8 +28,8 @@ export default function App() {
     <div id="mainrow" className="row flex-container">
       <div id="textcol" className="column flex-container">
         <PlotControl/>
-        <Message message={message} />
-        <Parts setMessage={setMessage} dims={dims} setDims={setDims} />
+        <Message/>
+        <Parts dims={dims} setDims={setDims} />
         <Config />
       </div>
       <div id="graphcol">

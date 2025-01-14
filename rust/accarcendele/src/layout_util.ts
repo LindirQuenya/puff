@@ -14,6 +14,7 @@ import {
   PhysicalCoordinates,
   SelectionEvent,
 } from "./types";
+import { SetMessage } from "./panes/Message";
 
 export function to_px(
   x_m: number,
@@ -396,7 +397,7 @@ export function processKeyPress(
   layout: LayoutResults,
 ): LayoutEvent[] | null {
   if (e.key.toLowerCase().match(/^[a-r]$|[1-4]|^arrow/) != null) {
-    console.log(`down: ${e.key} shift=${e.shiftKey} ctrl=${e.ctrlKey}`);
+    console.log(`Layout: down: ${e.key} shift=${e.shiftKey} ctrl=${e.ctrlKey}`);
     e.preventDefault();
     if (e.key.substring(0, 5) === "Arrow") {
       let dir = Direction.Up;
@@ -440,7 +441,7 @@ export function processKeyPress(
           return eventList.filter((_v, i) => i !== target_ind);
         } else {
           // otherwise, yell at the user.
-          console.error("Port is already joined: " + e.key);
+          SetMessage(["", "Port is already joined: " + e.key, ""]);
           return null;
         }
       }
@@ -456,7 +457,7 @@ export function processKeyPress(
       e.key.toLowerCase().match(/^[a-r]$/) != null &&
       dims[e.key.toLowerCase() as keyof PartDimensions] !== undefined
     ) {
-      console.log(`selected: ${e.key}`);
+      console.log(`Layout: selected ${e.key}`);
       if (e.key.toLowerCase() !== layout.selectedPart) {
         emit("part-selection", {
           selection: e.key.toLowerCase() as keyof PartsStr,

@@ -15,6 +15,7 @@ import {
   renderEvents,
 } from "../layout_util";
 import { invoke } from "@tauri-apps/api/core";
+import { SetMessage } from "./Message";
 
 export type LayoutProps = {
   dims: PartDimensions;
@@ -42,7 +43,7 @@ export function Layout(props: LayoutProps) {
   const [layout, err] = renderEvents(props.dims, eventList, canvasProps);
   if (err != null) {
     // TODO make this a real error message.
-    console.error("Layout error: " + err);
+    SetMessage(["Layout error: ", err, ""]);
   }
   useEffect(() => {
     const canvas = document.getElementById("layoutCanvas") as HTMLCanvasElement;

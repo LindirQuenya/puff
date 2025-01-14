@@ -14,9 +14,9 @@ pub struct Constraints {
 
 #[derive(Error, Debug)]
 pub enum ValidationError {
-    #[error("dimensions are below circuit resolution")]
+    #[error("dimensions below circuit resolution")]
     BelowCircuitResolution,
-    #[error("dimensions are larger than the board")]
+    #[error("dimensions larger than the board")]
     AboveBoardDimensions,
 }
 

@@ -42,6 +42,8 @@ export function Smith() {
       const datasets = payload.params.map((arr, i) => {
 				return {
 					label: `s${payload.payload.params[i][0]}${payload.payload.params[i][1]}`,
+					borderColor: `rgb(${payload.payload.params[i][2]})`,
+					backgroundColor: `rgba(${payload.payload.params[i][2]}, 0.25)`,
 					data: arr.map((s, n) => {
 						return {
 							x: s.re,
@@ -75,7 +77,7 @@ export function Smith() {
             borderColor: 'white'
           }
         },
-				legend: {display: true},
+				legend: {display: false},
 				scale: {
 					gridLines: {
 						color: 'rgba(255, 255, 255, 0.2)',

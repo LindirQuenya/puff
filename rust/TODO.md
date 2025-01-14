@@ -6,6 +6,7 @@ Tasks still to be done:
    - [x] use [library](https://docs.rs/graph-cycles/latest/graph_cycles/) to find all 1st order loops
    - [x] for each s-param, naively calculate Mason's rule
    - [ ] improve the performance to at least match the old version. Should easily beat it with multithreading...
+   - [ ] read [this paper](https://www.mdpi.com/2078-2489/11/12/562) and try to apply it.
  - [ ] Components
    - [ ] clines
    - [ ] qlines
@@ -18,6 +19,6 @@ Tasks still to be done:
    - [ ] s-params (touchstone)
  - [x] Touchstone parser (either fork existing or make own)
  - [ ] Completely reorganize frontend, split into pane-specific folders
- - [ ] Fiddle with CSS until it has the right scaling behavior
+ - [x] Fiddle with CSS until it has the right scaling behavior
  - [ ] Move to messaging where possible instead of prop-setter passing
  - [ ] Consolidate/dedupe rust dependencies

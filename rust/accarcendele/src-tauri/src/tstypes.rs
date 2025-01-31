@@ -80,7 +80,7 @@ pub struct ConfigUpdate {
     pub h: f64,
     /// Meters
     pub s: f64,
-    /// Meters, TODO: unused
+    /// Meters
     pub c: f64,
     pub mode: SimType,
 }

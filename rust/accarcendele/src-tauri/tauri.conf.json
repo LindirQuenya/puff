@@ -1,7 +1,7 @@
 {
   "productName": "accarcendele",
   "version": "0.0.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "edu.virginia.ece.puff",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",

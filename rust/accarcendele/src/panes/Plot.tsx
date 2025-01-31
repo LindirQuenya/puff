@@ -49,7 +49,8 @@ const options_init = {
       display: false,
     },
   },
-  onHover: (e, elements) => {
+  // @ts-ignore
+  onHover: (_e, elements) => {
     if (elements.length) {
       // TODO emit some sort of event.
       console.log(elements[0]);
@@ -107,6 +108,7 @@ export function Plot() {
   return (
     <div id="plot">
       <div id="chart-container">
+      {/*// @ts-ignore*/}
         <Line options={options_init} data={data} />
       </div>
     </div>

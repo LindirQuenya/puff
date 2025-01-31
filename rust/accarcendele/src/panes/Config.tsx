@@ -79,7 +79,7 @@ export function Config() {
   useEffect(() => {
     const parsedConfig = parseConfig(config.inputs, config.mode);
     invoke("update_config", { newconf: parsedConfig });
-  }, [defaultConfig]);
+  }, []);
 
   function configrow(key: keyof ConfigStr, label: string, unit: string) {
     const inputclass =

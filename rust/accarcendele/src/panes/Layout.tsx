@@ -4,10 +4,13 @@ import {
   CanvasProps,
   LayoutParsedEvent,
   ParseLayoutArgs,
+  PartDimension,
   PartDimensions,
+  PartsStr,
   SelectionEvent,
+  UpdateDimEvent,
 } from "../types";
-import { emit, listen } from "@tauri-apps/api/event";
+import { emit, Event, listen } from "@tauri-apps/api/event";
 import {
   LayoutEvent,
   optimize_event_list,
@@ -22,11 +25,48 @@ export type LayoutProps = {
   /// in mm
   boardSize: number;
 };
-const clamp = (n: number, min: number, max: number) => {
-  return Math.min(Math.max(n, min), max);
-};
+// const clamp = (n: number, min: number, max: number) => {
+//   return Math.min(Math.max(n, min), max);
+// };
 
-export function Layout(props: LayoutProps) {
+export function setDim(index: keyof PartsStr, dim: PartDimension | undefined) {
+  emit("dim-update", {
+    index,
+    dim
+  } as UpdateDimEvent);
+}
+
+export function setAllDims(dims: PartDimensions) {
+  emit("all-dims-update", dims);
+}
+
+export function Layout() {
+  const [dims, setDims] = useState({} as PartDimensions);
+  useEffect(() => {
+    const unlisten = listen("dim-update", async (e: Event<UpdateDimEvent>) => {
+      setDims({...dims, [e.payload.index]: e.payload.dim});
+    });
+    return () => {
+      unlisten.then((ul) => ul());
+    };
+  }, [dims]);
+  useEffect(() => {
+    const unlisten = listen("all-dims-update", async (e: Event<PartDimensions>) => {
+      setDims(e.payload);
+    });
+    return () => {
+      unlisten.then((ul) => ul());
+    };
+  }, [dims]);
+  const [boardSize, setBoardSize] = useState(12e-3);
+  useEffect(() => {
+    const unlisten = listen("config-update", async () => {
+      setBoardSize(await invoke("get_dimensions"));
+    });
+    return () => {
+      unlisten.then((ul) => ul());
+    };
+  }, [dims]);
   // TODO make nets be the same if within some fuzzy region (manufacturing resolution?)
   // TODO make this incremental/cached?
   const [eventList, setEventList] = useState([] as LayoutEvent[]);
@@ -34,13 +74,13 @@ export function Layout(props: LayoutProps) {
   // TODO memo
   const canvasProps = {
     pos: {
-      x_m: props.boardSize / 2,
-      y_m: props.boardSize / 2,
+      x_m: boardSize / 2,
+      y_m: boardSize / 2,
     },
-    width_m: props.boardSize,
-    height_m: props.boardSize,
+    width_m: boardSize,
+    height_m: boardSize,
   } as CanvasProps;
-  const [layout, err] = renderEvents(props.dims, eventList, canvasProps);
+  const [layout, err] = renderEvents(dims, eventList, canvasProps);
   if (err != null) {
     // TODO make this a real error message.
     SetMessage(["Layout error: ", err, ""]);
@@ -54,9 +94,9 @@ export function Layout(props: LayoutProps) {
         update(context, canvas.width, canvas.height);
       }
     }
-  }, [eventList, props.boardSize, props.dims]);
+  }, [eventList, boardSize, dims]);
   useEffect(() => {
-    const unlisten = listen('reparse-layout', (e) => {
+    const unlisten = listen('reparse-layout', (_e) => {
       const ports = [];
       const sim_netlist = [...layout.netlist];
       for (const port of layout.ports) {
@@ -94,7 +134,7 @@ export function Layout(props: LayoutProps) {
       id="layout"
       tabIndex={0}
       onKeyDown={(e) => {
-        const newEvents = processKeyPress(e, eventList, props.dims, layout);
+        const newEvents = processKeyPress(e, eventList, dims, layout);
         if (newEvents !== null) {
           setEventList(optimize_event_list(newEvents));
         }

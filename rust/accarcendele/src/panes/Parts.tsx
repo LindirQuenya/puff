@@ -15,6 +15,7 @@ import { emit, listen } from "@tauri-apps/api/event";
 import { parse_sparamdev } from "../parts/sparamdev";
 import "../styles/Parts.css";
 import { SetMessage } from "./Message";
+import { setAllDims, setDim } from "./Layout";
 
 const partNames = "abcdefghijklmnopqr";
 
@@ -48,12 +49,7 @@ function get_index(e: SyntheticEvent): keyof PartsStr | null {
   return match?.[1] as keyof PartsStr | null;
 }
 
-export type PartsProps = {
-  dims: PartDimensions;
-  setDims: React.Dispatch<React.SetStateAction<PartDimensions>>;
-};
-
-export function Parts(props: PartsProps) {
+export function Parts() {
   const [parts, setPartstr] = useState(() => {
     return Array.from(partNames).reduce(
       (o, c) => ({ ...o, [c]: { spec: "", parsed: null } }),
@@ -91,19 +87,26 @@ export function Parts(props: PartsProps) {
     try {
       const dim = await getDim(c);
       console.log(dim);
-      props.setDims({
-        ...props.dims,
-        [c]: dim,
-      });
+      setDim(c, dim);
     } catch (e) {
       SetMessage([`Part error: ${c}`, ...(e as string).split('\n'), ""]);
     }
   }
   useEffect(() => {
     const unlisten = listen("config-update", async () => {
-      await Promise.all(
-        [...partNames].map((c) => refreshDim(c as keyof PartsStr)),
-      );
+      try {
+        const dims = (await Promise.all(
+          [...partNames].map((c) => getDim(c as keyof PartsStr)
+          .then((d) => ({[c as keyof PartsStr]: d} as PartDimensions))
+          .catch((e) => {
+            SetMessage([`Part error: ${c}`, ...(e as string).split('\n'), ""]);
+            throw e;
+          }))
+        )).reduce((acc, d) => ({...acc, ...d}), {} as PartDimensions);
+        setAllDims(dims);
+      } catch (e) {
+        console.error(e);
+      }
       emit("reparse-layout");
     });
     return () => {

@@ -110,6 +110,9 @@ fn add_sparam_device(
 
 #[tauri::command]
 fn update_config(newconf: ConfigUpdate, simstate: State<SimSettings>, window: Window) {
+    #[cfg(debug_assertions)]
+    dbg!(newconf);
+
     let mut conf = simstate.0.write();
     conf.sim.z0 = newconf.zd;
     conf.sim.design_freq = newconf.fd;
@@ -123,7 +126,7 @@ fn update_config(newconf: ConfigUpdate, simstate: State<SimSettings>, window: Wi
     };
     conf.constr.board_dim = (newconf.s * 1000., newconf.s * 1000.);
     let _ = window
-        .emit("config-update", ())
+        .emit("config-update", newconf)
         .map_err(|e| eprintln!("{}", e.to_string()));
 }
 
@@ -140,7 +143,7 @@ fn parse_layout(
     sfg: State<SFG>,
     parts: State<PartMap>,
 ) -> Result<Vec<usize>, String> {
-    dbg!(&netlist);
+    //dbg!(&netlist);
     let mut processed_netlist: Vec<NetlistElement> = Vec::new();
     let parts_map = parts.0.lock();
     for elem in netlist {
@@ -149,11 +152,11 @@ fn parse_layout(
             port_nets: elem.port_nets.clone(),
         });
     }
-    dbg!(&processed_netlist);
+    //dbg!(&processed_netlist);
     let (conn, virt_comp) =
         netlist_to_connections(&processed_netlist, &HashSet::from_iter(grounds));
-    dbg!(&conn);
-    dbg!(&virt_comp);
+    //dbg!(&conn);
+    //dbg!(&virt_comp);
     let mut sfg_state = sfg.0.lock();
     let port_components = port_netlist_ind
         .into_iter()
@@ -165,7 +168,7 @@ fn parse_layout(
             })
         })
         .collect::<Vec<Option<ComponentPort>>>();
-    dbg!(&port_components);
+    //dbg!(&port_components);
     let avail_port_nums = port_components
         .iter()
         .enumerate()

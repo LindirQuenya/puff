@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Chart from "chartjs-chart-smith";
 import { useEffect, useState } from "react";
 import '../styles/Smith.css';

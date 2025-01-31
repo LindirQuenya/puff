@@ -65,7 +65,7 @@ export function getNode(
         Math.abs(y_m - node.y_m) < tolerance_m,
       i,
     ])
-    .filter(([withinTol, i]) => withinTol as boolean);
+    .filter(([withinTol, _i]) => withinTol as boolean);
   if (filtered.length > 0) {
     return [nodes, filtered[0][1] as number];
   } else {
@@ -429,7 +429,7 @@ export function processKeyPress(
           },
         ];
       } else {
-        const [extraNodes, currentNode] = getNode(
+        const [_extraNodes, currentNode] = getNode(
           layout.nodes,
           layout.pos.x_m,
           layout.pos.y_m,

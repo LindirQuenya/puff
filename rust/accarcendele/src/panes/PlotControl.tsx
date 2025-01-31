@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { extract_float, extract_integer } from "../regex";
+import { extract_float } from "../regex";
 import { emit, listen } from "@tauri-apps/api/event";
 import { DoPlotEvent, LayoutParsedEvent } from "../types";
 
 export function PlotControl() {
-	const [sToFrom, setSToFrom] = useState([[1, 1], [2, 1], [3, 1], [4, 1]] as ([number | null, number | null])[]);
+	const [sToFrom, _setSToFrom] = useState([[1, 1], [2, 1], [3, 1], [4, 1]] as ([number | null, number | null])[]);
 	const [availablePorts, setAvailablePorts] = useState([] as number[]);
 	useEffect(() => {
     const unlisten = listen("layout-parsed", (l) => {
@@ -24,7 +24,7 @@ export function PlotControl() {
 	const [nPoints, setNPoints] = useState("200");
 	const nPoints_parsed = parseInt(nPoints);
 	const [smithR, setSmithR] = useState("1");
-	const smithR_parsed = extract_float(smithR, 0, false)?.[0];
+	//const smithR_parsed = extract_float(smithR, 0, false)?.[0];
 	return (
 	<div id="plotcontroldiv" className="second-to-shrink" >
 	<table id="plotcontroltable" onKeyDownCapture={(e) => {

@@ -175,3 +175,8 @@ export type FrequencySweepArgs = {
   freqs: number[],
   sToFrom: [number, number][]
 }
+
+export type UpdateDimEvent = {
+  index: keyof PartsStr,
+  dim: PartDimension | undefined
+};

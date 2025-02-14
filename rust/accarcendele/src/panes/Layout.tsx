@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import "../styles/Layout.css";
 import {
+  CanvasPixels,
   CanvasProps,
   LayoutParsedEvent,
+  ParsedConfig,
   ParseLayoutArgs,
   PartDimension,
   PartDimensions,
@@ -12,6 +14,7 @@ import {
 } from "../types";
 import { emit, Event, listen } from "@tauri-apps/api/event";
 import {
+  board_init,
   LayoutEvent,
   optimize_event_list,
   processKeyPress,
@@ -59,9 +62,11 @@ export function Layout() {
     };
   }, [dims]);
   const [boardSize, setBoardSize] = useState(12e-3);
+  const [portSpacing, setPortSpacing] = useState(10e-3);
   useEffect(() => {
-    const unlisten = listen("config-update", async () => {
-      setBoardSize(await invoke("get_dimensions"));
+    const unlisten = listen("config-update", async (e: Event<ParsedConfig>) => {
+      setBoardSize(e.payload.s);
+      setPortSpacing(e.payload.c);
     });
     return () => {
       unlisten.then((ul) => ul());
@@ -70,7 +75,8 @@ export function Layout() {
   // TODO make nets be the same if within some fuzzy region (manufacturing resolution?)
   // TODO make this incremental/cached?
   const [eventList, setEventList] = useState([] as LayoutEvent[]);
-  const dim_px = Math.min(0.45*window.innerHeight, 0.35*window.innerWidth);
+  const [borderWidth, _setBorderWidth] = useState(10);
+  const dim_px = Math.floor(Math.min(0.45*window.innerHeight, 0.35*window.innerWidth));
   // TODO memo
   const canvasProps = {
     pos: {
@@ -80,6 +86,7 @@ export function Layout() {
     width_m: boardSize,
     height_m: boardSize,
   } as CanvasProps;
+  const init_update = board_init(canvasProps, portSpacing);
   const [layout, err] = renderEvents(dims, eventList, canvasProps);
   if (err != null) {
     // TODO make this a real error message.
@@ -89,12 +96,17 @@ export function Layout() {
     const canvas = document.getElementById("layoutCanvas") as HTMLCanvasElement;
     const context = canvas.getContext("2d");
     if (context) {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      for (const update of layout.updates) {
-        update(context, canvas.width, canvas.height);
+      const canvas_px: CanvasPixels = {
+        width_px: canvas.width - 2*borderWidth, 
+        height_px: canvas.height - 2*borderWidth,
+        offset_x: borderWidth,
+        offset_y: borderWidth
+      };
+      for (const update of [init_update, ...layout.updates]) {
+        update(context, canvas_px);
       }
     }
-  }, [eventList, boardSize, dims]);
+  }, [eventList, boardSize, dims, borderWidth, init_update]);
   useEffect(() => {
     const unlisten = listen('reparse-layout', (_e) => {
       const ports = [];

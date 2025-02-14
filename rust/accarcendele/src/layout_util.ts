@@ -5,6 +5,7 @@ import {
   update_netlist_tline,
 } from "./parts/tline";
 import {
+  CanvasPixels,
   CanvasProps,
   Direction,
   DrawFunc,
@@ -20,12 +21,12 @@ export function to_px(
   x_m: number,
   y_m: number,
   canvas: CanvasProps,
-  width_px: number,
-  height_px: number,
+  canvas_px: CanvasPixels,
+  offset_factor = 1,
 ): [number, number] {
   return [
-    (x_m * width_px) / canvas.width_m,
-    (y_m * height_px) / canvas.height_m,
+    (x_m * canvas_px.width_px) / canvas.width_m + canvas_px.offset_x * offset_factor,
+    (y_m * canvas_px.height_px) / canvas.height_m + canvas_px.offset_y * offset_factor,
   ];
 }
 
@@ -150,8 +151,7 @@ function drawCursor(canvas: CanvasProps): DrawingUpdate {
   return {
     update: (
       ctx: CanvasRenderingContext2D,
-      width_px: number,
-      height_px: number,
+      canvas_px: CanvasPixels,
     ) => {
       ctx.strokeStyle = "white";
       ctx.beginPath();
@@ -160,13 +160,12 @@ function drawCursor(canvas: CanvasProps): DrawingUpdate {
         canvas.pos.x_m,
         canvas.pos.y_m,
         canvas,
-        width_px,
-        height_px,
+        canvas_px,
       );
-      ctx.moveTo(Math.min(x_px + cursor_radius, width_px), y_px);
-      ctx.lineTo(Math.max(x_px - cursor_radius, 0), y_px);
-      ctx.moveTo(x_px, Math.min(y_px + cursor_radius, height_px));
-      ctx.lineTo(x_px, Math.max(y_px - cursor_radius, 0));
+      ctx.moveTo(Math.min(x_px + cursor_radius, canvas_px.width_px + canvas_px.offset_x), y_px);
+      ctx.lineTo(Math.max(x_px - cursor_radius, canvas_px.offset_x), y_px);
+      ctx.moveTo(x_px, Math.min(y_px + cursor_radius, canvas_px.height_px + canvas_px.offset_y));
+      ctx.lineTo(x_px, Math.max(y_px - cursor_radius, canvas_px.offset_y));
       ctx.stroke();
     },
     new_pos: canvas.pos,
@@ -302,8 +301,9 @@ export function renderEvents(
         };
         const x_m = canvas.pos.x_m,
           y_m = canvas.pos.y_m;
-        drawing_suffix.push((ctx, width_px, height_px) => {
-          const [x_px, y_px] = to_px(x_m, y_m, canvas, width_px, height_px);
+        drawing_suffix.push((ctx, canvas_px) => {
+          const [x_px, y_px] = to_px(x_m, y_m, canvas, canvas_px);
+          ctx.lineWidth = 1;
           ctx.fillStyle = "white";
           ctx.fillText(`${event.port + 1}`, x_px, y_px);
         });
@@ -565,4 +565,25 @@ function processArrow(
     }
   }
   return null;
+}
+
+// Clears the canvas, draws the ports and border.
+export function board_init(canvas: CanvasProps, portSpacing: number): DrawFunc {
+  return (ctx, canvas_px) => {
+    // clear the canvas
+    ctx.clearRect(0, 0, canvas_px.width_px + 2*canvas_px.offset_x, canvas_px.height_px + 2*canvas_px.offset_y);
+
+    // draw the border of the drawable area.
+    let [x_px, y_px] = to_px(canvas.width_m / 2, canvas.height_m / 2, canvas, canvas_px);
+    ctx.strokeStyle = `rgb(0, 255, 255)`;
+    ctx.strokeRect(x_px - canvas_px.width_px / 2, y_px - canvas_px.height_px / 2, canvas_px.width_px, canvas_px.height_px);
+    
+    // draw ports
+    ctx.fillStyle = "red";
+    for (let p = 0; p < 4; p++) {
+      [x_px, y_px] = to_px((p % 2)*canvas.width_m, (canvas.width_m - portSpacing) / 2 + portSpacing*Math.floor(p/2), canvas, canvas_px);
+      ctx.fillRect(x_px - 2, y_px - 2, 5, 5);
+      ctx.fillText(`${p+1}`, x_px - canvas_px.offset_x*((1+p)%2-(p%2)/3), y_px+5);
+    }
+  };
 }

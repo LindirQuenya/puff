@@ -1,6 +1,7 @@
 import { getNode, NetListElement, NetNode, to_px } from "../layout_util";
 import { extract_impedance, extract_length, TLINE_LABEL } from "../regex";
 import {
+  CanvasPixels,
   CanvasProps,
   Direction,
   DrawingUpdate,
@@ -133,16 +134,15 @@ export function draw_tline(
 
   const update = (
     ctx: CanvasRenderingContext2D,
-    width_px: number,
-    height_px: number,
+    canvas_px: CanvasPixels,
   ) => {
-    const [x_px, y_px] = to_px(minX, minY, canvas, width_px, height_px);
+    const [x_px, y_px] = to_px(minX, minY, canvas, canvas_px);
     const [w_px, h_px] = to_px(
       maxX - minX,
       maxY - minY,
       canvas,
-      width_px,
-      height_px,
+      canvas_px,
+      0
     );
     ctx.fillStyle = "#808000";
     ctx.fillRect(x_px, y_px, w_px, h_px);

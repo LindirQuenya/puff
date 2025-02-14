@@ -139,8 +139,16 @@ export type CanvasProps = {
   width_m: number;
   height_m: number;
 };
+
+export type CanvasPixels = {
+  width_px: number,
+  height_px: number,
+  offset_x: number,
+  offset_y: number
+};
+
 export type DrawFunc = {
-  (ctx: CanvasRenderingContext2D, width_px: number, height_px: number): void;
+  (ctx: CanvasRenderingContext2D, canvas_px: CanvasPixels): void;
 };
 export type DrawingUpdate = {
   update: DrawFunc;

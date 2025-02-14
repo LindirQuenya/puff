@@ -131,11 +131,6 @@ fn update_config(newconf: ConfigUpdate, simstate: State<SimSettings>, window: Wi
 }
 
 #[tauri::command]
-fn get_dimensions(simstate: State<SimSettings>) -> f64 {
-    simstate.0.read().constr.board_dim.0 / 1000.
-}
-
-#[tauri::command]
 fn parse_layout(
     netlist: Vec<TSNetlistElement>,
     port_netlist_ind: Vec<Option<usize>>,
@@ -245,7 +240,6 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             add_transmission_line,
             update_config,
-            get_dimensions,
             parse_layout,
             add_sparam_device,
             frequency_sweep

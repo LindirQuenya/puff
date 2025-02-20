@@ -63,10 +63,12 @@ export function Layout() {
   }, [dims]);
   const [boardSize, setBoardSize] = useState(12e-3);
   const [portSpacing, setPortSpacing] = useState(10e-3);
+  const [z0Width, setZ0Width] = useState(10e-3);
   useEffect(() => {
     const unlisten = listen("config-update", async (e: Event<ParsedConfig>) => {
       setBoardSize(e.payload.s);
       setPortSpacing(e.payload.c);
+      setZ0Width(e.payload.zd_width!);
     });
     return () => {
       unlisten.then((ul) => ul());
@@ -86,7 +88,7 @@ export function Layout() {
     width_m: boardSize,
     height_m: boardSize,
   } as CanvasProps;
-  const init_update = board_init(canvasProps, portSpacing);
+  const init_update = board_init(canvasProps, portSpacing, z0Width);
   const [layout, err] = renderEvents(dims, eventList, canvasProps);
   if (err != null) {
     // TODO make this a real error message.
@@ -102,8 +104,11 @@ export function Layout() {
         offset_x: borderWidth,
         offset_y: borderWidth
       };
-      for (const update of [init_update, ...layout.updates]) {
-        update(context, canvas_px);
+      // Calculate the port locations for the other draw functions.
+      // Give this one a dummy port info, it won't use it.
+      const ports = init_update(context, canvas_px, {z0Width: 0, ports_px: []})!;
+      for (const update of layout.updates) {
+        update(context, canvas_px, ports);
       }
     }
   }, [eventList, boardSize, dims, borderWidth, init_update]);

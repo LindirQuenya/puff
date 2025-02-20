@@ -109,7 +109,7 @@ fn add_sparam_device(
 }
 
 #[tauri::command]
-fn update_config(newconf: ConfigUpdate, simstate: State<SimSettings>, window: Window) {
+fn update_config(newconf: ConfigUpdate, simstate: State<SimSettings>, window: Window) -> Result<(), String> {
     #[cfg(debug_assertions)]
     dbg!(newconf);
 
@@ -125,9 +125,14 @@ fn update_config(newconf: ConfigUpdate, simstate: State<SimSettings>, window: Wi
         tstypes::SimType::StriplineMH => (SimType::Stripline, true),
     };
     conf.constr.board_dim = (newconf.s * 1000., newconf.s * 1000.);
+    // Compute the width of a z0 line.
+    let line = TLineProps::new(conf.sim.z0, enerdhil::sim::LengthSpec::Degrees(90.0), false, &conf.sim).map_err(|e| e.to_string())?;
+    let mut conf_emit = newconf;
+    conf_emit.zd_width = Some(line.get_dimensions().p_width/1000.0);
     let _ = window
-        .emit("config-update", newconf)
+        .emit("config-update", conf_emit)
         .map_err(|e| eprintln!("{}", e.to_string()));
+    Ok(())
 }
 
 #[tauri::command]

@@ -1,9 +1,13 @@
 import { NetListElement } from "./layout_util";
 import { Complex128 } from '@stdlib/types/complex';
+// TODO reorganize this into multiple files
+
 // DANGER: key names must match ConfigStr
 export type ParsedConfig = {
   /** Port impedance */
   zd: number;
+  /** TLine width corresponding to port impedance */
+  zd_width: number | null | undefined;
   /** Design frequency */
   fd: number;
   /** Dielectric relative permittivity */
@@ -147,8 +151,13 @@ export type CanvasPixels = {
   offset_y: number
 };
 
+export type PortInfo = {
+  z0Width: number,
+  ports_px: [number, number][]
+};
+
 export type DrawFunc = {
-  (ctx: CanvasRenderingContext2D, canvas_px: CanvasPixels): void;
+  (ctx: CanvasRenderingContext2D, canvas_px: CanvasPixels, ports: PortInfo, real: boolean): PortInfo | void;
 };
 export type DrawingUpdate = {
   update: DrawFunc;

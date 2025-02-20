@@ -123,6 +123,7 @@ export function optimize_event_list(events: LayoutEvent[]): LayoutEvent[] {
       } else if (
         event.kind === "moveToPort" &&
         newEvents[newEvents.length - 1].kind === "moveToPort"
+        // TODO optimize other moves also
       ) {
         newEvents[newEvents.length - 1] = event;
       } else if (
@@ -207,6 +208,7 @@ export type LayoutEvent =
       kind: "jumpNearestNode";
     };
 
+
 export function renderEvents(
   dims: PartDimensions,
   eventList: LayoutEvent[],
@@ -259,7 +261,7 @@ export function renderEvents(
                     nodes,
                     ports,
                     selectedPart,
-                    updates: drawing_updates,
+                    updates: [...drawing_updates, drawCursor(canvas).update, ...drawing_suffix],
                   },
                   "Part goes outside board!",
                 ];
@@ -279,7 +281,7 @@ export function renderEvents(
               nodes,
               ports,
               selectedPart,
-              updates: drawing_updates,
+              updates: [...drawing_updates, drawCursor(canvas).update, ...drawing_suffix],
             },
             `Invalid part: ${event.part}`,
           ];
@@ -301,11 +303,36 @@ export function renderEvents(
         };
         const x_m = canvas.pos.x_m,
           y_m = canvas.pos.y_m;
-        drawing_suffix.push((ctx, canvas_px) => {
+        drawing_suffix.push((ctx, canvas_px, ports) => {
           const [x_px, y_px] = to_px(x_m, y_m, canvas, canvas_px);
+          const [xport, yport] = ports.ports_px[event.port];
+          const halfw = to_px(ports.z0Width, 0, canvas, canvas_px, 0)[0]/2;
+
           ctx.lineWidth = 1;
-          ctx.fillStyle = "white";
-          ctx.fillText(`${event.port + 1}`, x_px, y_px);
+          ctx.strokeStyle = "white";
+          //ctx.beginPath();
+          //ctx.moveTo(xport, yport);
+          //ctx.lineTo(xport, yport-halfw);
+          ctx.moveTo(xport, yport-halfw);
+          const upperX = x_px+halfw*Math.sign(y_px-yport)*Math.sign(x_px-xport);
+          const lowerX = x_px-halfw*Math.sign(y_px-yport)*Math.sign(x_px-xport);
+          if (yport < y_px && y_px - yport > halfw) {
+            ctx.lineTo(x_px, yport-halfw);
+            ctx.lineTo(upperX, yport);
+          } else {
+            ctx.lineTo(upperX, yport-halfw);
+          }
+          ctx.lineTo(upperX, y_px);
+          ctx.lineTo(lowerX, y_px);
+          if (yport > y_px && yport - y_px > halfw) {
+            ctx.lineTo(lowerX, yport);
+            ctx.lineTo(x_px, yport+halfw);
+          } else {
+            ctx.lineTo(lowerX, yport+halfw);
+          }
+          ctx.lineTo(xport, yport+halfw);
+          //ctx.lineTo(xport, yport);
+          ctx.stroke();
         });
         break;
       }
@@ -325,7 +352,7 @@ export function renderEvents(
                     nodes,
                     ports,
                     selectedPart,
-                    updates: drawing_updates,
+                    updates: [...drawing_updates, drawCursor(canvas).update, ...drawing_suffix],
                   },
                   "Move goes outside board!",
                 ];
@@ -345,7 +372,7 @@ export function renderEvents(
               nodes,
               ports,
               selectedPart,
-              updates: drawing_updates,
+              updates: [...drawing_updates, drawCursor(canvas).update, ...drawing_suffix]
             },
             `Invalid part: ${event.part}`,
           ];
@@ -568,7 +595,7 @@ function processArrow(
 }
 
 // Clears the canvas, draws the ports and border.
-export function board_init(canvas: CanvasProps, portSpacing: number): DrawFunc {
+export function board_init(canvas: CanvasProps, portSpacing: number, z0Width: number): DrawFunc {
   return (ctx, canvas_px) => {
     // clear the canvas
     ctx.clearRect(0, 0, canvas_px.width_px + 2*canvas_px.offset_x, canvas_px.height_px + 2*canvas_px.offset_y);
@@ -578,12 +605,18 @@ export function board_init(canvas: CanvasProps, portSpacing: number): DrawFunc {
     ctx.strokeStyle = `rgb(0, 255, 255)`;
     ctx.strokeRect(x_px - canvas_px.width_px / 2, y_px - canvas_px.height_px / 2, canvas_px.width_px, canvas_px.height_px);
     
+    let ports_px: [number, number][] = [];
     // draw ports
     ctx.fillStyle = "red";
     for (let p = 0; p < 4; p++) {
       [x_px, y_px] = to_px((p % 2)*canvas.width_m, (canvas.width_m - portSpacing) / 2 + portSpacing*Math.floor(p/2), canvas, canvas_px);
+      ports_px.push([x_px, y_px]);
       ctx.fillRect(x_px - 2, y_px - 2, 5, 5);
       ctx.fillText(`${p+1}`, x_px - canvas_px.offset_x*((1+p)%2-(p%2)/3), y_px+5);
     }
+    return {
+      z0Width,
+      ports_px
+    };
   };
 }

@@ -72,6 +72,8 @@ pub enum SimType {
 pub struct ConfigUpdate {
     /// Ohms
     pub zd: f64,
+    /// Meters
+    pub zd_width: Option<f64>,
     /// Hz
     pub fd: f64,
     /// Unitless

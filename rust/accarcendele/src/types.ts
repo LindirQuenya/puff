@@ -1,5 +1,5 @@
 import { NetListElement } from "./layout_util";
-import { Complex128 } from '@stdlib/types/complex';
+import { Complex128 } from "@stdlib/types/complex";
 import { Render } from "./render/Render";
 // TODO reorganize this into multiple files
 
@@ -146,15 +146,15 @@ export type CanvasProps = {
 };
 
 export type CanvasPixels = {
-  width_px: number,
-  height_px: number,
-  offset_x: number,
-  offset_y: number
+  width_px: number;
+  height_px: number;
+  offset_x: number;
+  offset_y: number;
 };
 
 export type PortInfo = {
-  z0Width: number,
-  ports_px: [number, number][]
+  z0Width: number;
+  ports_px: [number, number][];
 };
 
 export type DrawFunc = {
@@ -178,23 +178,23 @@ export type LayoutParsedEvent = {
 };
 
 export type DoPlotEvent = {
-  params: [number, number, string][],
-  freqLim: [number, number],
-  nPoints: number
+  params: [number, number, string][];
+  freqLim: [number, number];
+  nPoints: number;
 };
 
 export type PlotSmithEvent = {
-  params: Complex128[][],
-  freqs: number[],
-  payload: DoPlotEvent,
+  params: Complex128[][];
+  freqs: number[];
+  payload: DoPlotEvent;
 };
 
 export type FrequencySweepArgs = {
-  freqs: number[],
-  sToFrom: [number, number][]
-}
+  freqs: number[];
+  sToFrom: [number, number][];
+};
 
 export type UpdateDimEvent = {
-  index: keyof PartsStr,
-  dim: PartDimension | undefined
+  index: keyof PartsStr;
+  dim: PartDimension | undefined;
 };

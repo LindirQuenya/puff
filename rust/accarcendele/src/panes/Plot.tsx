@@ -32,14 +32,13 @@ const options_init = {
   aspectRatio: 2,
   scales: {
     x: {
-      type: 'linear',
-      grace: '0%',
-      
+      type: "linear",
+      grace: "0%",
     },
     y: {
       min: -20,
-      max: 0
-    }
+      max: 0,
+    },
   },
   plugins: {
     legend: {
@@ -81,25 +80,37 @@ const data_init = {
 export function Plot() {
   const [data, setData] = useState(data_init);
   useEffect(() => {
-    const unlisten = listen('do-plot', (e) => {
+    const unlisten = listen("do-plot", (e) => {
       const payload = e.payload as DoPlotEvent;
-      const freqs = linspace(payload.freqLim[0], payload.freqLim[1], payload.nPoints, {dtype: 'generic'});
-      invoke('frequency_sweep', {freqs, sToFrom: payload.params.map(([a,b]) => [a-1,b-1])} as FrequencySweepArgs).catch(console.error).then((sp) => {
-        const params = (sp as [number, number][][]).map(arr => arr.map((pair) => new Complex128(pair[0], pair[1])));
-        const newData = {
-          labels: freqs,
-          datasets: params.map((arr, i) => {
-            return {
-              label: `s${payload.params[i][0]}${payload.params[i][1]}`,
-              data: arr.map(s => 20*Math.log10(cabs(s))),
-              borderColor: `rgb(${payload.params[i][2]})`,
-              backgroundColor: `rgba(${payload.params[i][2]}, 0.25)`,
-            };
-          })
-        };
-        emit('plot-smith', {params, freqs, payload} as PlotSmithEvent);
-        setData(newData);
-      });
+      const freqs = linspace(
+        payload.freqLim[0],
+        payload.freqLim[1],
+        payload.nPoints,
+        { dtype: "generic" },
+      );
+      invoke("frequency_sweep", {
+        freqs,
+        sToFrom: payload.params.map(([a, b]) => [a - 1, b - 1]),
+      } as FrequencySweepArgs)
+        .catch(console.error)
+        .then((sp) => {
+          const params = (sp as [number, number][][]).map((arr) =>
+            arr.map((pair) => new Complex128(pair[0], pair[1])),
+          );
+          const newData = {
+            labels: freqs,
+            datasets: params.map((arr, i) => {
+              return {
+                label: `s${payload.params[i][0]}${payload.params[i][1]}`,
+                data: arr.map((s) => 20 * Math.log10(cabs(s))),
+                borderColor: `rgb(${payload.params[i][2]})`,
+                backgroundColor: `rgba(${payload.params[i][2]}, 0.25)`,
+              };
+            }),
+          };
+          emit("plot-smith", { params, freqs, payload } as PlotSmithEvent);
+          setData(newData);
+        });
     });
     return () => {
       unlisten.then((ul) => ul());
@@ -108,7 +119,7 @@ export function Plot() {
   return (
     <div id="plot">
       <div id="chart-container">
-      {/*// @ts-ignore*/}
+        {/*// @ts-ignore*/}
         <Line options={options_init} data={data} />
       </div>
     </div>

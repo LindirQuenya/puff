@@ -26,7 +26,7 @@ import { SetMessage } from "./Message";
 export function setDim(index: keyof PartsStr, dim: PartDimension | undefined) {
   emit("dim-update", {
     index,
-    dim
+    dim,
   } as UpdateDimEvent);
 }
 
@@ -38,16 +38,19 @@ export function Layout() {
   const [dims, setDims] = useState({} as PartDimensions);
   useEffect(() => {
     const unlisten = listen("dim-update", async (e: Event<UpdateDimEvent>) => {
-      setDims({...dims, [e.payload.index]: e.payload.dim});
+      setDims({ ...dims, [e.payload.index]: e.payload.dim });
     });
     return () => {
       unlisten.then((ul) => ul());
     };
   }, [dims]);
   useEffect(() => {
-    const unlisten = listen("all-dims-update", async (e: Event<PartDimensions>) => {
-      setDims(e.payload);
-    });
+    const unlisten = listen(
+      "all-dims-update",
+      async (e: Event<PartDimensions>) => {
+        setDims(e.payload);
+      },
+    );
     return () => {
       unlisten.then((ul) => ul());
     };
@@ -69,7 +72,9 @@ export function Layout() {
   // TODO make this incremental/cached?
   const [eventList, setEventList] = useState([] as LayoutEvent[]);
   const [borderWidth, _setBorderWidth] = useState(10);
-  const dim_px = Math.floor(Math.min(0.45*window.innerHeight, 0.35*window.innerWidth));
+  const dim_px = Math.floor(
+    Math.min(0.45 * window.innerHeight, 0.35 * window.innerWidth),
+  );
   // TODO memo
   const canvasProps = {
     pos: {
@@ -90,21 +95,24 @@ export function Layout() {
     const context = canvas.getContext("2d");
     if (context) {
       const canvas_px: CanvasPixels = {
-        width_px: canvas.width - 2*borderWidth, 
-        height_px: canvas.height - 2*borderWidth,
+        width_px: canvas.width - 2 * borderWidth,
+        height_px: canvas.height - 2 * borderWidth,
         offset_x: borderWidth,
-        offset_y: borderWidth
+        offset_y: borderWidth,
       };
       // Calculate the port locations for the other draw functions.
       // Give this one a dummy port info, it won't use it.
-      const ports = init_update(context, canvas_px, {z0Width: 0, ports_px: []})!;
+      const ports = init_update(context, canvas_px, {
+        z0Width: 0,
+        ports_px: [],
+      })!;
       for (const update of layout.updates) {
         update(context, canvas_px, ports);
       }
     }
   }, [eventList, boardSize, dims, borderWidth, init_update]);
   useEffect(() => {
-    const unlisten = listen('reparse-layout', (_e) => {
+    const unlisten = listen("reparse-layout", (_e) => {
       const ports = [];
       const sim_netlist = [...layout.netlist];
       for (const port of layout.ports) {
@@ -157,7 +165,7 @@ export function Layout() {
         } as SelectionEvent);
       }}
     >
-      <canvas id="layoutCanvas" width={dim_px} height={dim_px}/>
+      <canvas id="layoutCanvas" width={dim_px} height={dim_px} />
     </div>
   );
 }

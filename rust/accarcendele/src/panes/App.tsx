@@ -13,17 +13,17 @@ export default function App() {
   return (
     <div id="mainrow" className="row flex-container">
       <div id="textcol" className="column flex-container">
-        <PlotControl/>
-        <Message/>
+        <PlotControl />
+        <Message />
         <Parts />
         <Config />
       </div>
       <div id="graphcol">
         <div id="layoutsmithrow" className="row flex-container">
-        <Layout/>
-        <Smith/>
+          <Layout />
+          <Smith />
         </div>
-        <Plot/>
+        <Plot />
       </div>
     </div>
   );

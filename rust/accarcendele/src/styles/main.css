@@ -72,7 +72,7 @@ div {
   justify-content: center;
   font-family: monospace;
   font-size: 8px;
-  height:100%;
+  height: 100%;
 }
 #graphcol {
   flex-grow: 0;

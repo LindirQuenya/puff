@@ -133,11 +133,17 @@ export function draw_tline(
     return null;
   }
 
-  const update = (
-    render: Render
-  ) => {
-    render.draw_box({x_m: minX, y_m: minY}, {x_m: maxX-minX, y_m: maxY-minY}, "#808000");
-    render.preview_text({x_m: (minX+maxX)/2, y_m: (minY+maxY)/2}, letter, "red");
+  const update = (render: Render) => {
+    render.draw_box(
+      { x_m: minX, y_m: minY },
+      { x_m: maxX - minX, y_m: maxY - minY },
+      "#808000",
+    );
+    render.preview_text(
+      { x_m: (minX + maxX) / 2, y_m: (minY + maxY) / 2 },
+      letter,
+      "red",
+    );
   };
 
   return [

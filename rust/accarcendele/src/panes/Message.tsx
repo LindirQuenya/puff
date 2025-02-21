@@ -5,7 +5,7 @@ import { emit, listen } from "@tauri-apps/api/event";
 export function Message() {
   const [message, setMessage] = useState(["", "", ""]);
   useEffect(() => {
-    const unlisten = listen('set-message', (e) => {
+    const unlisten = listen("set-message", (e) => {
       setMessage(e.payload as string[]);
     });
     return () => {
@@ -27,5 +27,5 @@ export function Message() {
 }
 
 export function SetMessage(msg: string[]) {
-  emit('set-message', msg);
+  emit("set-message", msg);
 }

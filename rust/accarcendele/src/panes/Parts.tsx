@@ -89,20 +89,28 @@ export function Parts() {
       console.log(dim);
       setDim(c, dim);
     } catch (e) {
-      SetMessage([`Part error: ${c}`, ...(e as string).split('\n'), ""]);
+      SetMessage([`Part error: ${c}`, ...(e as string).split("\n"), ""]);
     }
   }
   useEffect(() => {
     const unlisten = listen("config-update", async () => {
       try {
-        const dims = (await Promise.all(
-          [...partNames].map((c) => getDim(c as keyof PartsStr)
-          .then((d) => ({[c as keyof PartsStr]: d} as PartDimensions))
-          .catch((e) => {
-            SetMessage([`Part error: ${c}`, ...(e as string).split('\n'), ""]);
-            throw e;
-          }))
-        )).reduce((acc, d) => ({...acc, ...d}), {} as PartDimensions);
+        const dims = (
+          await Promise.all(
+            [...partNames].map((c) =>
+              getDim(c as keyof PartsStr)
+                .then((d) => ({ [c as keyof PartsStr]: d }) as PartDimensions)
+                .catch((e) => {
+                  SetMessage([
+                    `Part error: ${c}`,
+                    ...(e as string).split("\n"),
+                    "",
+                  ]);
+                  throw e;
+                }),
+            ),
+          )
+        ).reduce((acc, d) => ({ ...acc, ...d }), {} as PartDimensions);
         setAllDims(dims);
       } catch (e) {
         console.error(e);
@@ -138,7 +146,11 @@ export function Parts() {
           try {
             dim = await getDim(index);
           } catch (e) {
-            SetMessage([`Part error: ${index}`, ...(e as string).split('\n'), ""]);
+            SetMessage([
+              `Part error: ${index}`,
+              ...(e as string).split("\n"),
+              "",
+            ]);
             return;
           }
           if (!dim) {
@@ -201,7 +213,7 @@ export function Parts() {
                     }}
                   ></input>
                 </th>
-                <td/>
+                <td />
               </tr>
             );
           })}

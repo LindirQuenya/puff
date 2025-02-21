@@ -26,8 +26,10 @@ export function to_px(
   offset_factor = 1,
 ): [number, number] {
   return [
-    (x_m * canvas_px.width_px) / canvas.width_m + canvas_px.offset_x * offset_factor,
-    (y_m * canvas_px.height_px) / canvas.height_m + canvas_px.offset_y * offset_factor,
+    (x_m * canvas_px.width_px) / canvas.width_m +
+      canvas_px.offset_x * offset_factor,
+    (y_m * canvas_px.height_px) / canvas.height_m +
+      canvas_px.offset_y * offset_factor,
   ];
 }
 
@@ -184,7 +186,6 @@ export type LayoutEvent =
       kind: "jumpNearestNode";
     };
 
-
 export function renderEvents(
   dims: PartDimensions,
   eventList: LayoutEvent[],
@@ -314,7 +315,7 @@ export function renderEvents(
               nodes,
               ports,
               selectedPart,
-              updates: drawing_updates
+              updates: drawing_updates,
             },
             `Invalid part: ${event.part}`,
           ];
@@ -356,11 +357,22 @@ export function renderEvents(
   ];
 }
 
-function calculatePortLocations(render: Render, portSpacing: number): PhysicalCoordinates[] {
-  return [...Array(4).keys()].map((i) => ({x_m: render.board_size.x_m * (i%2), y_m: (render.board_size.y_m+(2*(i%2)-1)*portSpacing)/2}));
+function calculatePortLocations(
+  render: Render,
+  portSpacing: number,
+): PhysicalCoordinates[] {
+  return [...Array(4).keys()].map((i) => ({
+    x_m: render.board_size.x_m * (i % 2),
+    y_m: (render.board_size.y_m + (2 * (i % 2) - 1) * portSpacing) / 2,
+  }));
 }
 
-export function performRender(render: Render, layout: LayoutResults, portSpacing: number, z0Width: number): void {
+export function performRender(
+  render: Render,
+  layout: LayoutResults,
+  portSpacing: number,
+  z0Width: number,
+): void {
   render.init();
   for (const event of layout.updates) {
     event(render);
@@ -548,28 +560,56 @@ function processArrow(
 }
 
 // Clears the canvas, draws the ports and border.
-export function board_init(canvas: CanvasProps, portSpacing: number, z0Width: number): DrawFunc {
+export function board_init(
+  canvas: CanvasProps,
+  portSpacing: number,
+  z0Width: number,
+): DrawFunc {
   return (ctx, canvas_px) => {
     // clear the canvas
-    ctx.clearRect(0, 0, canvas_px.width_px + 2*canvas_px.offset_x, canvas_px.height_px + 2*canvas_px.offset_y);
+    ctx.clearRect(
+      0,
+      0,
+      canvas_px.width_px + 2 * canvas_px.offset_x,
+      canvas_px.height_px + 2 * canvas_px.offset_y,
+    );
 
     // draw the border of the drawable area.
-    let [x_px, y_px] = to_px(canvas.width_m / 2, canvas.height_m / 2, canvas, canvas_px);
+    let [x_px, y_px] = to_px(
+      canvas.width_m / 2,
+      canvas.height_m / 2,
+      canvas,
+      canvas_px,
+    );
     ctx.strokeStyle = `rgb(0, 255, 255)`;
-    ctx.strokeRect(x_px - canvas_px.width_px / 2, y_px - canvas_px.height_px / 2, canvas_px.width_px, canvas_px.height_px);
-    
+    ctx.strokeRect(
+      x_px - canvas_px.width_px / 2,
+      y_px - canvas_px.height_px / 2,
+      canvas_px.width_px,
+      canvas_px.height_px,
+    );
+
     let ports_px: [number, number][] = [];
     // draw ports
     ctx.fillStyle = "red";
     for (let p = 0; p < 4; p++) {
-      [x_px, y_px] = to_px((p % 2)*canvas.width_m, (canvas.width_m - portSpacing) / 2 + portSpacing*Math.floor(p/2), canvas, canvas_px);
+      [x_px, y_px] = to_px(
+        (p % 2) * canvas.width_m,
+        (canvas.width_m - portSpacing) / 2 + portSpacing * Math.floor(p / 2),
+        canvas,
+        canvas_px,
+      );
       ports_px.push([x_px, y_px]);
       ctx.fillRect(x_px - 2, y_px - 2, 5, 5);
-      ctx.fillText(`${p+1}`, x_px - canvas_px.offset_x*((1+p)%2-(p%2)/3), y_px+5);
+      ctx.fillText(
+        `${p + 1}`,
+        x_px - canvas_px.offset_x * (((1 + p) % 2) - (p % 2) / 3),
+        y_px + 5,
+      );
     }
     return {
       z0Width,
-      ports_px
+      ports_px,
     };
   };
 }

@@ -16,6 +16,7 @@ import {
   SelectionEvent,
 } from "./types";
 import { SetMessage } from "./panes/Message";
+import { Render } from "./render/Render";
 
 export function to_px(
   x_m: number,
@@ -148,31 +149,6 @@ export function optimize_event_list(events: LayoutEvent[]): LayoutEvent[] {
   return newEvents;
 }
 
-function drawCursor(canvas: CanvasProps): DrawingUpdate {
-  return {
-    update: (
-      ctx: CanvasRenderingContext2D,
-      canvas_px: CanvasPixels,
-    ) => {
-      ctx.strokeStyle = "white";
-      ctx.beginPath();
-      const cursor_radius = 5;
-      const [x_px, y_px] = to_px(
-        canvas.pos.x_m,
-        canvas.pos.y_m,
-        canvas,
-        canvas_px,
-      );
-      ctx.moveTo(Math.min(x_px + cursor_radius, canvas_px.width_px + canvas_px.offset_x), y_px);
-      ctx.lineTo(Math.max(x_px - cursor_radius, canvas_px.offset_x), y_px);
-      ctx.moveTo(x_px, Math.min(y_px + cursor_radius, canvas_px.height_px + canvas_px.offset_y));
-      ctx.lineTo(x_px, Math.max(y_px - cursor_radius, canvas_px.offset_y));
-      ctx.stroke();
-    },
-    new_pos: canvas.pos,
-  };
-}
-
 export type LayoutEvent =
   | {
       kind: "selectPart";
@@ -219,7 +195,6 @@ export function renderEvents(
   let nodes: NetNode[] = [];
   let netlist: NetListElement[] = [];
   let drawing_updates: DrawFunc[] = [];
-  let drawing_suffix: DrawFunc[] = [];
   const ports: PortConnection[] = [null, null, null, null];
   for (const [i, event] of eventList.entries()) {
     switch (event.kind) {
@@ -261,7 +236,7 @@ export function renderEvents(
                     nodes,
                     ports,
                     selectedPart,
-                    updates: [...drawing_updates, drawCursor(canvas).update, ...drawing_suffix],
+                    updates: drawing_updates,
                   },
                   "Part goes outside board!",
                 ];
@@ -281,7 +256,7 @@ export function renderEvents(
               nodes,
               ports,
               selectedPart,
-              updates: [...drawing_updates, drawCursor(canvas).update, ...drawing_suffix],
+              updates: drawing_updates,
             },
             `Invalid part: ${event.part}`,
           ];
@@ -301,39 +276,6 @@ export function renderEvents(
           net_index: currentNode,
           source_event: i,
         };
-        const x_m = canvas.pos.x_m,
-          y_m = canvas.pos.y_m;
-        drawing_suffix.push((ctx, canvas_px, ports) => {
-          const [x_px, y_px] = to_px(x_m, y_m, canvas, canvas_px);
-          const [xport, yport] = ports.ports_px[event.port];
-          const halfw = to_px(ports.z0Width, 0, canvas, canvas_px, 0)[0]/2;
-
-          ctx.lineWidth = 1;
-          ctx.strokeStyle = "white";
-          //ctx.beginPath();
-          //ctx.moveTo(xport, yport);
-          //ctx.lineTo(xport, yport-halfw);
-          ctx.moveTo(xport, yport-halfw);
-          const upperX = x_px+halfw*Math.sign(y_px-yport)*Math.sign(x_px-xport);
-          const lowerX = x_px-halfw*Math.sign(y_px-yport)*Math.sign(x_px-xport);
-          if (yport < y_px && y_px - yport > halfw) {
-            ctx.lineTo(x_px, yport-halfw);
-            ctx.lineTo(upperX, yport);
-          } else {
-            ctx.lineTo(upperX, yport-halfw);
-          }
-          ctx.lineTo(upperX, y_px);
-          ctx.lineTo(lowerX, y_px);
-          if (yport > y_px && yport - y_px > halfw) {
-            ctx.lineTo(lowerX, yport);
-            ctx.lineTo(x_px, yport+halfw);
-          } else {
-            ctx.lineTo(lowerX, yport+halfw);
-          }
-          ctx.lineTo(xport, yport+halfw);
-          //ctx.lineTo(xport, yport);
-          ctx.stroke();
-        });
         break;
       }
       case "moveHalfPlacement": {
@@ -352,7 +294,7 @@ export function renderEvents(
                     nodes,
                     ports,
                     selectedPart,
-                    updates: [...drawing_updates, drawCursor(canvas).update, ...drawing_suffix],
+                    updates: drawing_updates,
                   },
                   "Move goes outside board!",
                 ];
@@ -372,7 +314,7 @@ export function renderEvents(
               nodes,
               ports,
               selectedPart,
-              updates: [...drawing_updates, drawCursor(canvas).update, ...drawing_suffix]
+              updates: drawing_updates
             },
             `Invalid part: ${event.part}`,
           ];
@@ -401,9 +343,6 @@ export function renderEvents(
       // TODO all the rest. But this is all I need for a branchline, I think.
     }
   }
-  const returned = drawCursor(canvas);
-  drawing_updates.push(returned.update);
-  canvas.pos = returned.new_pos;
   return [
     {
       pos: canvas.pos,
@@ -411,10 +350,24 @@ export function renderEvents(
       nodes,
       ports,
       selectedPart,
-      updates: [...drawing_updates, ...drawing_suffix],
+      updates: drawing_updates,
     },
     null,
   ];
+}
+
+function calculatePortLocations(render: Render, portSpacing: number): PhysicalCoordinates[] {
+  return [...Array(4).keys()].map((i) => ({x_m: render.board_size.x_m * (i%2), y_m: (render.board_size.y_m+(2*(i%2)-1)*portSpacing)/2}));
+}
+
+export function performRender(render: Render, layout: LayoutResults, portSpacing: number, z0Width: number): void {
+  render.init();
+  for (const event of layout.updates) {
+    event(render);
+  }
+
+  render.draw_ports();
+  render.preview_cursor(layout.pos);
 }
 
 export function processKeyPress(

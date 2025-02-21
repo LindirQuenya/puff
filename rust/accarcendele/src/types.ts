@@ -1,5 +1,6 @@
 import { NetListElement } from "./layout_util";
 import { Complex128 } from '@stdlib/types/complex';
+import { Render } from "./render/Render";
 // TODO reorganize this into multiple files
 
 // DANGER: key names must match ConfigStr
@@ -157,7 +158,7 @@ export type PortInfo = {
 };
 
 export type DrawFunc = {
-  (ctx: CanvasRenderingContext2D, canvas_px: CanvasPixels, ports: PortInfo, real: boolean): PortInfo | void;
+  (render: Render): void;
 };
 export type DrawingUpdate = {
   update: DrawFunc;

@@ -23,15 +23,6 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { SetMessage } from "./Message";
 
-export type LayoutProps = {
-  dims: PartDimensions;
-  /// in mm
-  boardSize: number;
-};
-// const clamp = (n: number, min: number, max: number) => {
-//   return Math.min(Math.max(n, min), max);
-// };
-
 export function setDim(index: keyof PartsStr, dim: PartDimension | undefined) {
   emit("dim-update", {
     index,
@@ -65,7 +56,7 @@ export function Layout() {
   const [portSpacing, setPortSpacing] = useState(10e-3);
   const [z0Width, setZ0Width] = useState(10e-3);
   useEffect(() => {
-    const unlisten = listen("config-update", async (e: Event<ParsedConfig>) => {
+    const unlisten = listen("config-update", (e: Event<ParsedConfig>) => {
       setBoardSize(e.payload.s);
       setPortSpacing(e.payload.c);
       setZ0Width(e.payload.zd_width!);

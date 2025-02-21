@@ -1,27 +1,28 @@
 import { useEffect, useState } from "react";
 import "../styles/Layout.css";
 import {
-  CanvasPixels,
-  CanvasProps,
+  BoardProps,
   LayoutParsedEvent,
   ParsedConfig,
   ParseLayoutArgs,
   PartDimension,
   PartDimensions,
   PartsStr,
+  PhysicalCoordinates,
   SelectionEvent,
   UpdateDimEvent,
 } from "../types";
 import { emit, Event, listen } from "@tauri-apps/api/event";
 import {
-  board_init,
   LayoutEvent,
   optimize_event_list,
+  performRender,
   processKeyPress,
   renderEvents,
 } from "../layout_util";
 import { invoke } from "@tauri-apps/api/core";
 import { SetMessage } from "./Message";
+import { CanvasRender } from "../render/CanvasRender";
 
 export function setDim(index: keyof PartsStr, dim: PartDimension | undefined) {
   emit("dim-update", {
@@ -76,16 +77,18 @@ export function Layout() {
     Math.min(0.45 * window.innerHeight, 0.35 * window.innerWidth),
   );
   // TODO memo
-  const canvasProps = {
+  const board_dim: PhysicalCoordinates = {
+    x_m: boardSize,
+    y_m: boardSize,
+  };
+  const boardProps = {
     pos: {
       x_m: boardSize / 2,
       y_m: boardSize / 2,
     },
-    width_m: boardSize,
-    height_m: boardSize,
-  } as CanvasProps;
-  const init_update = board_init(canvasProps, portSpacing, z0Width);
-  const [layout, err] = renderEvents(dims, eventList, canvasProps);
+    dim: board_dim,
+  } as BoardProps;
+  const [layout, err] = renderEvents(dims, eventList, boardProps);
   if (err != null) {
     // TODO make this a real error message.
     SetMessage(["Layout error: ", err, ""]);
@@ -94,23 +97,18 @@ export function Layout() {
     const canvas = document.getElementById("layoutCanvas") as HTMLCanvasElement;
     const context = canvas.getContext("2d");
     if (context) {
-      const canvas_px: CanvasPixels = {
-        width_px: canvas.width - 2 * borderWidth,
-        height_px: canvas.height - 2 * borderWidth,
-        offset_x: borderWidth,
-        offset_y: borderWidth,
-      };
-      // Calculate the port locations for the other draw functions.
-      // Give this one a dummy port info, it won't use it.
-      const ports = init_update(context, canvas_px, {
-        z0Width: 0,
-        ports_px: [],
-      })!;
-      for (const update of layout.updates) {
-        update(context, canvas_px, ports);
-      }
+      const render = new CanvasRender(
+        board_dim,
+        {
+          x_px: canvas.width,
+          y_px: canvas.height,
+        },
+        { x_px: borderWidth, y_px: borderWidth },
+        context,
+      );
+      performRender(render, layout, portSpacing, z0Width);
     }
-  }, [eventList, boardSize, dims, borderWidth, init_update]);
+  }, [eventList, boardSize, dims, borderWidth, z0Width, portSpacing]);
   useEffect(() => {
     const unlisten = listen("reparse-layout", (_e) => {
       const ports = [];

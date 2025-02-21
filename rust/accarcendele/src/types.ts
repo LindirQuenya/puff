@@ -139,17 +139,9 @@ export enum Direction {
   Left,
 }
 
-export type CanvasProps = {
+export type BoardProps = {
   pos: PhysicalCoordinates;
-  width_m: number;
-  height_m: number;
-};
-
-export type CanvasPixels = {
-  width_px: number;
-  height_px: number;
-  offset_x: number;
-  offset_y: number;
+  dim: PhysicalCoordinates;
 };
 
 export type PortInfo = {

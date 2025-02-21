@@ -5,11 +5,9 @@ import {
   update_netlist_tline,
 } from "./parts/tline";
 import {
-  CanvasPixels,
-  CanvasProps,
+  BoardProps,
   Direction,
   DrawFunc,
-  DrawingUpdate,
   PartDimensions,
   PartsStr,
   PhysicalCoordinates,
@@ -17,21 +15,6 @@ import {
 } from "./types";
 import { SetMessage } from "./panes/Message";
 import { Render } from "./render/Render";
-
-export function to_px(
-  x_m: number,
-  y_m: number,
-  canvas: CanvasProps,
-  canvas_px: CanvasPixels,
-  offset_factor = 1,
-): [number, number] {
-  return [
-    (x_m * canvas_px.width_px) / canvas.width_m +
-      canvas_px.offset_x * offset_factor,
-    (y_m * canvas_px.height_px) / canvas.height_m +
-      canvas_px.offset_y * offset_factor,
-  ];
-}
 
 export type NetListElement = {
   part: keyof PartDimensions;
@@ -53,8 +36,7 @@ export type NetNode = {
   up: [number, number | null] | null;
   down: [number, number | null] | null;
   // Position
-  x_m: number;
-  y_m: number;
+  pos: PhysicalCoordinates;
 };
 
 export function getNode(
@@ -65,8 +47,8 @@ export function getNode(
 ): [NetNode[], number] {
   let filtered = nodes
     .map((node, i) => [
-      Math.abs(x_m - node.x_m) < tolerance_m &&
-        Math.abs(y_m - node.y_m) < tolerance_m,
+      Math.abs(x_m - node.pos.x_m) < tolerance_m &&
+        Math.abs(y_m - node.pos.y_m) < tolerance_m,
       i,
     ])
     .filter(([withinTol, _i]) => withinTol as boolean);
@@ -78,8 +60,7 @@ export function getNode(
       right: null,
       up: null,
       down: null,
-      x_m,
-      y_m,
+      pos: { x_m, y_m },
     };
     return [[...nodes, newNode], nodes.length];
   }
@@ -189,7 +170,7 @@ export type LayoutEvent =
 export function renderEvents(
   dims: PartDimensions,
   eventList: LayoutEvent[],
-  canvas: CanvasProps,
+  board: BoardProps,
 ): [LayoutResults, string | null] {
   let selectedPart = "a" as keyof PartDimensions;
 
@@ -215,11 +196,11 @@ export function renderEvents(
               const returned = draw_tline(
                 event.part,
                 part.dim,
-                canvas,
+                board,
                 event.dir,
               );
               if (returned) {
-                canvas.pos = returned[0].new_pos;
+                board.pos = returned[0].new_pos;
                 drawing_updates.push(returned[0].update);
                 [netlist, nodes] = update_netlist_tline(
                   returned[1],
@@ -232,7 +213,7 @@ export function renderEvents(
               } else {
                 return [
                   {
-                    pos: canvas.pos,
+                    pos: board.pos,
                     netlist,
                     nodes,
                     ports,
@@ -252,7 +233,7 @@ export function renderEvents(
         } else {
           return [
             {
-              pos: canvas.pos,
+              pos: board.pos,
               netlist,
               nodes,
               ports,
@@ -269,8 +250,8 @@ export function renderEvents(
         // TODO tolerance
         [nodes, currentNode] = getNode(
           nodes,
-          canvas.pos.x_m,
-          canvas.pos.y_m,
+          board.pos.x_m,
+          board.pos.y_m,
           1e-12,
         );
         ports[event.port] = {
@@ -284,13 +265,13 @@ export function renderEvents(
         if (part) {
           switch (part.kind) {
             case "t": {
-              const returned = move_half_tline(part.dim, canvas, event.dir);
+              const returned = move_half_tline(part.dim, board, event.dir);
               if (returned) {
-                canvas.pos = returned;
+                board.pos = returned;
               } else {
                 return [
                   {
-                    pos: canvas.pos,
+                    pos: board.pos,
                     netlist,
                     nodes,
                     ports,
@@ -310,7 +291,7 @@ export function renderEvents(
         } else {
           return [
             {
-              pos: canvas.pos,
+              pos: board.pos,
               netlist,
               nodes,
               ports,
@@ -327,16 +308,16 @@ export function renderEvents(
         // TODO tolerance
         [nodes, currentNode] = getNode(
           nodes,
-          canvas.pos.x_m,
-          canvas.pos.y_m,
+          board.pos.x_m,
+          board.pos.y_m,
           1e-12,
         );
         const target_ind = getNodeDirection(nodes[currentNode], event.dir);
         if (target_ind != null) {
           const target_node = nodes[target_ind[0]];
-          canvas.pos = {
-            x_m: target_node.x_m,
-            y_m: target_node.y_m,
+          board.pos = {
+            x_m: target_node.pos.x_m,
+            y_m: target_node.pos.y_m,
           };
         }
         break;
@@ -346,7 +327,7 @@ export function renderEvents(
   }
   return [
     {
-      pos: canvas.pos,
+      pos: board.pos,
       netlist,
       nodes,
       ports,
@@ -377,8 +358,14 @@ export function performRender(
   for (const event of layout.updates) {
     event(render);
   }
-
-  render.draw_ports();
+  const port_from = calculatePortLocations(render, portSpacing);
+  const port_to = layout.ports.map((conn) => {
+    if (conn) {
+      return layout.nodes[conn.net_index].pos;
+    }
+    return null;
+  });
+  render.draw_ports(port_from, port_to, z0Width);
   render.preview_cursor(layout.pos);
 }
 
@@ -557,59 +544,4 @@ function processArrow(
     }
   }
   return null;
-}
-
-// Clears the canvas, draws the ports and border.
-export function board_init(
-  canvas: CanvasProps,
-  portSpacing: number,
-  z0Width: number,
-): DrawFunc {
-  return (ctx, canvas_px) => {
-    // clear the canvas
-    ctx.clearRect(
-      0,
-      0,
-      canvas_px.width_px + 2 * canvas_px.offset_x,
-      canvas_px.height_px + 2 * canvas_px.offset_y,
-    );
-
-    // draw the border of the drawable area.
-    let [x_px, y_px] = to_px(
-      canvas.width_m / 2,
-      canvas.height_m / 2,
-      canvas,
-      canvas_px,
-    );
-    ctx.strokeStyle = `rgb(0, 255, 255)`;
-    ctx.strokeRect(
-      x_px - canvas_px.width_px / 2,
-      y_px - canvas_px.height_px / 2,
-      canvas_px.width_px,
-      canvas_px.height_px,
-    );
-
-    let ports_px: [number, number][] = [];
-    // draw ports
-    ctx.fillStyle = "red";
-    for (let p = 0; p < 4; p++) {
-      [x_px, y_px] = to_px(
-        (p % 2) * canvas.width_m,
-        (canvas.width_m - portSpacing) / 2 + portSpacing * Math.floor(p / 2),
-        canvas,
-        canvas_px,
-      );
-      ports_px.push([x_px, y_px]);
-      ctx.fillRect(x_px - 2, y_px - 2, 5, 5);
-      ctx.fillText(
-        `${p + 1}`,
-        x_px - canvas_px.offset_x * (((1 + p) % 2) - (p % 2) / 3),
-        y_px + 5,
-      );
-    }
-    return {
-      z0Width,
-      ports_px,
-    };
-  };
 }

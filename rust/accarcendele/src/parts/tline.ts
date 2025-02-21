@@ -1,9 +1,8 @@
-import { getNode, NetListElement, NetNode, to_px } from "../layout_util";
+import { getNode, NetListElement, NetNode } from "../layout_util";
 import { extract_impedance, extract_length, TLINE_LABEL } from "../regex";
 import { Render } from "../render/Render";
 import {
-  CanvasPixels,
-  CanvasProps,
+  BoardProps,
   Direction,
   DrawingUpdate,
   LengthUnit,
@@ -51,7 +50,7 @@ export function parse_tline(s: string): TLine | null {
 
 export function move_half_tline(
   dim: TLineDimensions,
-  canvas: CanvasProps,
+  board: BoardProps,
   dir: Direction,
 ): PhysicalCoordinates | null {
   let doubled = draw_tline(
@@ -59,11 +58,13 @@ export function move_half_tline(
     dim,
     {
       pos: {
-        x_m: canvas.pos.x_m * 2,
-        y_m: canvas.pos.y_m * 2,
+        x_m: board.pos.x_m * 2,
+        y_m: board.pos.y_m * 2,
       },
-      width_m: canvas.width_m * 2,
-      height_m: canvas.height_m * 2,
+      dim: {
+        x_m: board.dim.x_m * 2,
+        y_m: board.dim.y_m * 2,
+      },
     },
     dir,
   );
@@ -79,7 +80,7 @@ export function move_half_tline(
 export function draw_tline(
   letter: string,
   dim: TLineDimensions,
-  canvas: CanvasProps,
+  board: BoardProps,
   dir: Direction,
 ): [DrawingUpdate, PhysicalCoordinates[]] | null {
   let maxX = -1,
@@ -93,43 +94,43 @@ export function draw_tline(
     // Though honestly there are only a few components that don't end up looking the same. Most are either a rectangle or triangle.
     // Coupled lines are an odd one out.
     case Direction.Up: {
-      maxX = canvas.pos.x_m + dim.p_width / 2;
-      minX = canvas.pos.x_m - dim.p_width / 2;
-      maxY = canvas.pos.y_m;
-      minY = canvas.pos.y_m - dim.p_len;
-      newX = canvas.pos.x_m;
+      maxX = board.pos.x_m + dim.p_width / 2;
+      minX = board.pos.x_m - dim.p_width / 2;
+      maxY = board.pos.y_m;
+      minY = board.pos.y_m - dim.p_len;
+      newX = board.pos.x_m;
       newY = minY;
       break;
     }
     case Direction.Down: {
-      maxX = canvas.pos.x_m + dim.p_width / 2;
-      minX = canvas.pos.x_m - dim.p_width / 2;
-      maxY = canvas.pos.y_m + dim.p_len;
-      minY = canvas.pos.y_m;
-      newX = canvas.pos.x_m;
+      maxX = board.pos.x_m + dim.p_width / 2;
+      minX = board.pos.x_m - dim.p_width / 2;
+      maxY = board.pos.y_m + dim.p_len;
+      minY = board.pos.y_m;
+      newX = board.pos.x_m;
       newY = maxY;
       break;
     }
     case Direction.Left: {
-      maxY = canvas.pos.y_m + dim.p_width / 2;
-      minY = canvas.pos.y_m - dim.p_width / 2;
-      maxX = canvas.pos.x_m;
-      minX = canvas.pos.x_m - dim.p_len;
-      newY = canvas.pos.y_m;
+      maxY = board.pos.y_m + dim.p_width / 2;
+      minY = board.pos.y_m - dim.p_width / 2;
+      maxX = board.pos.x_m;
+      minX = board.pos.x_m - dim.p_len;
+      newY = board.pos.y_m;
       newX = minX;
       break;
     }
     case Direction.Right: {
-      maxY = canvas.pos.y_m + dim.p_width / 2;
-      minY = canvas.pos.y_m - dim.p_width / 2;
-      maxX = canvas.pos.x_m + dim.p_len;
-      minX = canvas.pos.x_m;
-      newY = canvas.pos.y_m;
+      maxY = board.pos.y_m + dim.p_width / 2;
+      minY = board.pos.y_m - dim.p_width / 2;
+      maxX = board.pos.x_m + dim.p_len;
+      minX = board.pos.x_m;
+      newY = board.pos.y_m;
       newX = maxX;
       break;
     }
   }
-  if (minY < 0 || maxY > canvas.height_m || minX < 0 || maxX > canvas.width_m) {
+  if (minY < 0 || maxY > board.dim.y_m || minX < 0 || maxX > board.dim.x_m) {
     return null;
   }
 
@@ -156,8 +157,8 @@ export function draw_tline(
     },
     [
       {
-        x_m: canvas.pos.x_m,
-        y_m: canvas.pos.y_m,
+        x_m: board.pos.x_m,
+        y_m: board.pos.y_m,
       },
       {
         x_m: newX,
